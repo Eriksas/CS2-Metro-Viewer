@@ -5,6 +5,8 @@ namespace MetroDiagram.Core.Validation;
 
 public static class MetroNetworkValidator
 {
+    private const double PathPointDeduplicationEpsilon = 0.001;
+
     private static readonly string[] Palette =
     [
         "#D71920",
@@ -98,6 +100,7 @@ public static class MetroNetworkValidator
         {
             MetroLine line = lines[i];
             line.Stops ??= [];
+            line.PathPoints = NormalizePathPoints(line.PathPoints);
 
             if (string.IsNullOrWhiteSpace(line.Id))
             {
@@ -153,6 +156,33 @@ public static class MetroNetworkValidator
                 }
             }
         }
+    }
+
+    private static List<MetroPathPoint> NormalizePathPoints(List<MetroPathPoint>? pathPoints)
+    {
+        if (pathPoints is null || pathPoints.Count == 0)
+        {
+            return [];
+        }
+
+        List<MetroPathPoint> normalized = [];
+        foreach (MetroPathPoint point in pathPoints)
+        {
+            if (normalized.Count > 0 && AreClose(normalized[^1], point))
+            {
+                continue;
+            }
+
+            normalized.Add(point);
+        }
+
+        return normalized;
+    }
+
+    private static bool AreClose(MetroPathPoint a, MetroPathPoint b)
+    {
+        return Math.Abs(a.X - b.X) <= PathPointDeduplicationEpsilon
+            && Math.Abs(a.Z - b.Z) <= PathPointDeduplicationEpsilon;
     }
 
     private static void DeriveStationLineMembership(MetroNetwork network)

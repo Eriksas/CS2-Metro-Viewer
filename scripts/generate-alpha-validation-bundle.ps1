@@ -1,0 +1,381 @@
+[CmdletBinding()]
+param(
+    [string] $InputJson = 'D:\CS2MetroDiagram\metro-export.json',
+    [string] $CaseName = 'primary-city',
+    [string] $OutputRoot,
+    [switch] $SkipZip
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+function Get-FullPath {
+    param([Parameter(Mandatory = $true)][string] $Path)
+    return [System.IO.Path]::GetFullPath($Path)
+}
+
+function Convert-ToSafeName {
+    param([string] $Value)
+
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        return 'case'
+    }
+
+    $safe = $Value.Trim()
+    foreach ($invalid in [System.IO.Path]::GetInvalidFileNameChars()) {
+        $safe = $safe.Replace([string] $invalid, '-')
+    }
+
+    $safe = [regex]::Replace($safe, '\s+', '-')
+    $safe = [regex]::Replace($safe, '-{2,}', '-').Trim('-')
+    if ([string]::IsNullOrWhiteSpace($safe)) {
+        return 'case'
+    }
+
+    if ($safe.Length -gt 80) {
+        $safe = $safe.Substring(0, 80).Trim('-')
+    }
+
+    return $safe
+}
+
+function Get-DefaultDiagnosticsPath {
+    param([Parameter(Mandatory = $true)][string] $JsonPath)
+
+    $directory = [System.IO.Path]::GetDirectoryName($JsonPath)
+    $fileName = [System.IO.Path]::GetFileName($JsonPath)
+
+    if ($fileName -eq 'metro-export.json') {
+        return Join-Path $directory 'metro-export-diagnostics.txt'
+    }
+
+    if ($fileName -like 'metro-export-*.json') {
+        $diagnosticsName = $fileName -replace '^metro-export-', 'metro-export-diagnostics-'
+        $diagnosticsName = [System.IO.Path]::ChangeExtension($diagnosticsName, '.txt')
+        return Join-Path $directory $diagnosticsName
+    }
+
+    return Join-Path $directory 'metro-export-diagnostics.txt'
+}
+
+function Read-ExportMetadata {
+    param([Parameter(Mandatory = $true)][string] $JsonPath)
+
+    try {
+        $document = Get-Content -LiteralPath $JsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        $stations = @($document.network.stations)
+        $lines = @($document.network.lines)
+        return [pscustomobject]@{
+            CityName = if ([string]::IsNullOrWhiteSpace($document.city.name)) { 'Unnamed City' } else { $document.city.name }
+            ExportedAtUtc = $document.city.exportedAtUtc
+            GeneratorVersion = $document.generator.version
+            LineCount = $lines.Count
+            StationCount = $stations.Count
+            SchemaVersion = $document.schemaVersion
+        }
+    }
+    catch {
+        return [pscustomobject]@{
+            CityName = 'unreadable'
+            ExportedAtUtc = 'unreadable'
+            GeneratorVersion = 'unreadable'
+            LineCount = 0
+            StationCount = 0
+            SchemaVersion = 'unreadable'
+        }
+    }
+}
+
+function Invoke-CliRender {
+    param(
+        [Parameter(Mandatory = $true)][string] $CliProject,
+        [Parameter(Mandatory = $true)][string] $InputPath,
+        [Parameter(Mandatory = $true)][string] $OutputPath,
+        [Parameter(Mandatory = $true)][string] $Layout,
+        [switch] $UsePathPoints
+    )
+
+    $arguments = @(
+        'run',
+        '--project',
+        $CliProject,
+        '--no-restore',
+        '--',
+        $InputPath,
+        $OutputPath,
+        '--layout',
+        $Layout,
+        '--size',
+        'poster',
+        '--hide-generic-labels',
+        '--hide-crowded-labels'
+    )
+
+    if ($UsePathPoints) {
+        $arguments += '--use-path-points'
+    }
+
+    & dotnet @arguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "CLI render failed for layout '$Layout' with exit code $LASTEXITCODE."
+    }
+}
+
+function Invoke-Capture {
+    param(
+        [Parameter(Mandatory = $true)][string] $CaptureScript,
+        [Parameter(Mandatory = $true)][string] $InputSvg,
+        [Parameter(Mandatory = $true)][string] $OutputPng
+    )
+
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $CaptureScript -InputSvg $InputSvg -OutputPng $OutputPng -Width 3200 -Height 2000
+    if ($LASTEXITCODE -ne 0) {
+        throw "Screenshot generation failed for '$InputSvg' with exit code $LASTEXITCODE."
+    }
+}
+
+function Write-ValidationNotes {
+    param(
+        [Parameter(Mandatory = $true)][string] $Path,
+        [Parameter(Mandatory = $true)][string] $InputPath,
+        [Parameter(Mandatory = $true)][string] $DiagnosticsPath,
+        [Parameter(Mandatory = $true)][string] $GeneratedAt,
+        [Parameter(Mandatory = $true)] $Metadata,
+        [Parameter(Mandatory = $true)][string] $BundlePath
+    )
+
+    @"
+# Alpha Validation Bundle
+
+## Source
+- Input JSON: $InputPath
+- Diagnostics: $DiagnosticsPath
+- Bundle path: $BundlePath
+- Bundle generated at: $GeneratedAt
+- City name: $($Metadata.CityName)
+- Export timestamp: $($Metadata.ExportedAtUtc)
+- Generator version: $($Metadata.GeneratorVersion)
+- Schema version: $($Metadata.SchemaVersion)
+- Lines: $($Metadata.LineCount)
+- Stations: $($Metadata.StationCount)
+
+## Render Settings
+- Baseline layout: geographic
+- UsePathPoints: true
+- Service family merge: enabled
+- Shared corridor: disabled
+- Express stripe: disabled
+- Size preset: poster
+- Label filters: hide generic labels, hide crowded labels
+- Comparison layouts: schematic-lite, schematic-v2
+- Schematic-v2 status: experimental
+
+## Visual Review
+- Geographic baseline acceptable: yes/no
+- Schematic-v2 topology issues:
+- Label readability issues:
+- Legend readability issues:
+- Station marker issues:
+- Route continuity issues:
+
+## Regression Decision
+- Suitable as regression case: yes/no
+- Priority: low/medium/high
+- Notes:
+
+## Generated Files
+- metro-export.json
+- metro-export-diagnostics.txt, if available
+- baseline-geographic.svg
+- baseline-geographic.full.png
+- visual-continuity-summary.txt
+- visual-continuity-debug.svg
+- schematic-lite.svg
+- schematic-lite.full.png
+- schematic-v2.svg
+- schematic-v2.full.png
+- schematic-v2-diagnostics\
+- feedback-template-filled.md
+"@ | Set-Content -LiteralPath $Path -Encoding UTF8
+}
+
+function Write-FilledFeedbackTemplate {
+    param(
+        [Parameter(Mandatory = $true)][string] $Path,
+        [Parameter(Mandatory = $true)][string] $BundlePath,
+        [Parameter(Mandatory = $true)] $Metadata
+    )
+
+    @"
+# Feedback Template - v0.1.0-alpha.2-candidate
+
+## Environment
+
+- CS2 Metro Diagram version: $($Metadata.GeneratorVersion)
+- Cities: Skylines II game version:
+- Operating system:
+- Are other transport-related mods enabled? If yes, list them:
+- Alpha validation bundle path: $BundlePath
+
+## City / Network
+
+- City name: $($Metadata.CityName)
+- Approximate number of metro lines: $($Metadata.LineCount)
+- Approximate number of metro stations: $($Metadata.StationCount)
+- Does the city contain loops, branches, or many interchanges?
+
+## Files To Attach
+
+- `metro-export.json`
+- `metro-export-diagnostics.txt`, if available
+- `baseline-geographic.svg`
+- `baseline-geographic.full.png`
+- `schematic-v2.svg`
+- `schematic-v2.full.png`
+- `schematic-v2-diagnostics\shared-corridors.txt`
+- Viewer settings from `Documents\CS2MetroDiagram\viewer-settings.json`, if available
+- Relevant game/mod log excerpt if export failed
+
+## Viewer Settings
+
+- Layout mode: `geographic` / `schematic-lite` / `schematic-v2`
+- Width:
+- Height:
+- Label font size:
+- Grid size:
+- Hide generic station labels: yes/no
+- Hide crowded labels: yes/no
+- Always show interchanges: yes/no
+- Always show terminals: yes/no
+
+## Issue
+
+- What did you expect to happen?
+- What happened instead?
+- Steps to reproduce:
+- Any error text shown in the Viewer or game log:
+"@ | Set-Content -LiteralPath $Path -Encoding UTF8
+}
+
+$scriptRoot = Split-Path -Parent $PSCommandPath
+$repoRoot = (Resolve-Path -LiteralPath (Join-Path $scriptRoot '..')).Path
+$inputPath = Get-FullPath $InputJson
+
+if (-not (Test-Path -LiteralPath $inputPath -PathType Leaf)) {
+    Write-Host "ERROR: Input JSON not found: $inputPath" -ForegroundColor Red
+    Write-Host "Export Real Metro JSON in-game first, or pass -InputJson <path>." -ForegroundColor Yellow
+    exit 1
+}
+
+if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
+    $OutputRoot = Join-Path $repoRoot 'artifacts\alpha-validation'
+}
+
+$outputRootPath = Get-FullPath $OutputRoot
+$timestamp = (Get-Date).ToString('yyyyMMdd-HHmmss')
+$safeCaseName = Convert-ToSafeName $CaseName
+$bundleName = "$timestamp-$safeCaseName"
+$bundlePath = Join-Path $outputRootPath $bundleName
+$tempBundlePath = "$bundlePath.tmp"
+$zipPath = Join-Path $outputRootPath "alpha-validation-$bundleName.zip"
+$diagnosticsInputPath = Get-FullPath (Get-DefaultDiagnosticsPath -JsonPath $inputPath)
+$metadata = Read-ExportMetadata -JsonPath $inputPath
+
+if (Test-Path -LiteralPath $tempBundlePath) {
+    Remove-Item -LiteralPath $tempBundlePath -Recurse -Force
+}
+
+if (Test-Path -LiteralPath $bundlePath) {
+    throw "Validation bundle already exists: $bundlePath"
+}
+
+New-Item -ItemType Directory -Force -Path $tempBundlePath | Out-Null
+
+$cliProject = Join-Path $repoRoot 'src\MetroDiagram.Cli\MetroDiagram.Cli.csproj'
+$captureScript = Join-Path $repoRoot 'scripts\capture-svg-screenshot.ps1'
+$visualScript = Join-Path $repoRoot 'scripts\analyze-visual-continuity.ps1'
+$schematicDiagnosticsScript = Join-Path $repoRoot 'scripts\generate-schematic-v2-diagnostics.ps1'
+
+try {
+    Write-Host "Input JSON: $inputPath"
+    Write-Host "Case name: $safeCaseName"
+    Write-Host "Temporary bundle: $tempBundlePath"
+
+    $bundleJson = Join-Path $tempBundlePath 'metro-export.json'
+    $bundleDiagnostics = Join-Path $tempBundlePath 'metro-export-diagnostics.txt'
+    Copy-Item -LiteralPath $inputPath -Destination $bundleJson -Force
+
+    if (Test-Path -LiteralPath $diagnosticsInputPath -PathType Leaf) {
+        Copy-Item -LiteralPath $diagnosticsInputPath -Destination $bundleDiagnostics -Force
+    }
+    else {
+        Write-Host "WARNING: Diagnostics file not found: $diagnosticsInputPath" -ForegroundColor Yellow
+    }
+
+    $viewerSettings = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'CS2MetroDiagram\viewer-settings.json'
+    if (Test-Path -LiteralPath $viewerSettings -PathType Leaf) {
+        Copy-Item -LiteralPath $viewerSettings -Destination (Join-Path $tempBundlePath 'viewer-settings.json') -Force
+    }
+
+    $baselineSvg = Join-Path $tempBundlePath 'baseline-geographic.svg'
+    $baselinePng = Join-Path $tempBundlePath 'baseline-geographic.full.png'
+    $schematicLiteSvg = Join-Path $tempBundlePath 'schematic-lite.svg'
+    $schematicLitePng = Join-Path $tempBundlePath 'schematic-lite.full.png'
+    $schematicV2Svg = Join-Path $tempBundlePath 'schematic-v2.svg'
+    $schematicV2Png = Join-Path $tempBundlePath 'schematic-v2.full.png'
+    $visualReport = Join-Path $tempBundlePath 'visual-continuity-summary.txt'
+    $visualDebugSvg = Join-Path $tempBundlePath 'visual-continuity-debug.svg'
+
+    Invoke-CliRender -CliProject $cliProject -InputPath $bundleJson -OutputPath $baselineSvg -Layout 'geographic' -UsePathPoints
+    Invoke-CliRender -CliProject $cliProject -InputPath $bundleJson -OutputPath $schematicLiteSvg -Layout 'schematic-lite'
+    Invoke-CliRender -CliProject $cliProject -InputPath $bundleJson -OutputPath $schematicV2Svg -Layout 'schematic-v2'
+
+    Invoke-Capture -CaptureScript $captureScript -InputSvg $baselineSvg -OutputPng $baselinePng
+    Invoke-Capture -CaptureScript $captureScript -InputSvg $schematicLiteSvg -OutputPng $schematicLitePng
+    Invoke-Capture -CaptureScript $captureScript -InputSvg $schematicV2Svg -OutputPng $schematicV2Png
+
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $visualScript -InputSvg $baselineSvg -OutputReport $visualReport -OutputDebugSvg $visualDebugSvg
+    if ($LASTEXITCODE -ne 0) {
+        throw "Visual continuity analysis failed with exit code $LASTEXITCODE."
+    }
+
+    Write-ValidationNotes -Path (Join-Path $tempBundlePath 'notes.md') -InputPath $inputPath -DiagnosticsPath $diagnosticsInputPath -GeneratedAt (Get-Date -Format 'yyyy-MM-dd HH:mm:ss') -Metadata $metadata -BundlePath $bundlePath
+    Write-FilledFeedbackTemplate -Path (Join-Path $tempBundlePath 'feedback-template-filled.md') -BundlePath $bundlePath -Metadata $metadata
+
+    Move-Item -LiteralPath $tempBundlePath -Destination $bundlePath
+
+    $finalBundleJson = Join-Path $bundlePath 'metro-export.json'
+    $finalDiagnosticsOutput = Join-Path $bundlePath 'schematic-v2-diagnostics'
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $schematicDiagnosticsScript -InputJson $finalBundleJson -OutputDir $finalDiagnosticsOutput
+    if ($LASTEXITCODE -ne 0) {
+        throw "Schematic-v2 diagnostics failed with exit code $LASTEXITCODE."
+    }
+
+    if (-not $SkipZip) {
+        if (Test-Path -LiteralPath $zipPath -PathType Leaf) {
+            Remove-Item -LiteralPath $zipPath -Force
+        }
+
+        Compress-Archive -LiteralPath $bundlePath -DestinationPath $zipPath -Force
+    }
+
+    Write-Host "Alpha validation bundle written to: $bundlePath"
+    if (-not $SkipZip) {
+        Write-Host "Alpha validation zip written to: $zipPath"
+    }
+}
+catch {
+    if (Test-Path -LiteralPath $tempBundlePath) {
+        Remove-Item -LiteralPath $tempBundlePath -Recurse -Force
+    }
+
+    if (Test-Path -LiteralPath $bundlePath) {
+        Remove-Item -LiteralPath $bundlePath -Recurse -Force
+    }
+
+    if (Test-Path -LiteralPath $zipPath -PathType Leaf) {
+        Remove-Item -LiteralPath $zipPath -Force
+    }
+
+    throw
+}

@@ -5,7 +5,7 @@ using MetroDiagram.Rendering;
 
 if (args.Length < 2 || args.Contains("--help", StringComparer.OrdinalIgnoreCase))
 {
-    Console.Error.WriteLine("Usage: MetroDiagram.Cli <input.json> <output.svg> [--layout geographic|schematic-lite] [--grid-size N] [--width N] [--height N] [--legend-width N] [--padding N] [--line-width N] [--station-radius N] [--label-font-size N] [--center-expansion]");
+    Console.Error.WriteLine("Usage: MetroDiagram.Cli <input.json> <output.svg> [--layout geographic|schematic-lite|schematic-v2] [--style standard|transit-map] [--size compact|standard|poster|ultra] [--grid-size N] [--schematic-min-station-spacing N] [--width N] [--height N] [--legend-width N] [--padding N] [--line-width N] [--station-radius N] [--label-font-size N] [--center-expansion] [--hide-generic-labels] [--hide-crowded-labels] [--always-show-interchanges] [--always-show-terminals] [--use-path-points] [--simplify-path-points] [--no-simplify-path-points] [--path-simplification-tolerance N] [--min-path-segment-length N] [--enable-parallel-corridor-offset] [--disable-service-family-merge] [--enable-shared-corridor-composite-stroke] [--enable-express-center-stripe]");
     return args.Length < 2 ? 2 : 0;
 }
 
@@ -66,8 +66,23 @@ static SvgRenderOptions ParseRenderOptions(string[] optionArgs)
     double? stationRadius = null;
     double? labelFontSize = null;
     SvgLayoutMode? layoutMode = null;
+    SvgMapStyle? mapStyle = null;
     double? gridSize = null;
+    double? schematicMinimumStationSpacing = null;
+    SvgRenderSizePreset? sizePreset = null;
+    double? pathSimplificationTolerance = null;
+    double? minPathSegmentLength = null;
     bool centerExpansion = false;
+    bool hideGenericLabels = false;
+    bool hideCrowdedLabels = false;
+    bool alwaysShowInterchanges = false;
+    bool alwaysShowTerminals = false;
+    bool usePathPoints = false;
+    bool? simplifyPathPoints = null;
+    bool enableParallelCorridorOffset = false;
+    bool enableServiceFamilyMerge = true;
+    bool enableSharedCorridorCompositeStroke = false;
+    bool enableExpressCenterStripe = false;
 
     for (int i = 0; i < optionArgs.Length; i++)
     {
@@ -77,8 +92,17 @@ static SvgRenderOptions ParseRenderOptions(string[] optionArgs)
             case "--layout":
                 layoutMode = ReadLayoutMode(optionArgs, ref i, option);
                 break;
+            case "--style":
+                mapStyle = ReadMapStyle(optionArgs, ref i, option);
+                break;
             case "--grid-size":
                 gridSize = ReadDouble(optionArgs, ref i, option);
+                break;
+            case "--schematic-min-station-spacing":
+                schematicMinimumStationSpacing = ReadDouble(optionArgs, ref i, option);
+                break;
+            case "--size":
+                sizePreset = ReadSizePreset(optionArgs, ref i, option);
                 break;
             case "--width":
                 width = ReadInt(optionArgs, ref i, option);
@@ -104,17 +128,69 @@ static SvgRenderOptions ParseRenderOptions(string[] optionArgs)
             case "--center-expansion":
                 centerExpansion = true;
                 break;
+            case "--hide-generic-labels":
+                hideGenericLabels = true;
+                break;
+            case "--hide-crowded-labels":
+                hideCrowdedLabels = true;
+                break;
+            case "--always-show-interchanges":
+                alwaysShowInterchanges = true;
+                break;
+            case "--always-show-terminals":
+                alwaysShowTerminals = true;
+                break;
+            case "--use-path-points":
+                usePathPoints = true;
+                break;
+            case "--simplify-path-points":
+                simplifyPathPoints = true;
+                break;
+            case "--no-simplify-path-points":
+                simplifyPathPoints = false;
+                break;
+            case "--path-simplification-tolerance":
+                pathSimplificationTolerance = ReadDouble(optionArgs, ref i, option);
+                break;
+            case "--min-path-segment-length":
+                minPathSegmentLength = ReadDouble(optionArgs, ref i, option);
+                break;
+            case "--enable-parallel-corridor-offset":
+                enableParallelCorridorOffset = true;
+                break;
+            case "--disable-service-family-merge":
+                enableServiceFamilyMerge = false;
+                break;
+            case "--enable-shared-corridor-composite-stroke":
+                enableSharedCorridorCompositeStroke = true;
+                break;
+            case "--enable-express-center-stripe":
+                enableExpressCenterStripe = true;
+                break;
             default:
                 throw new ArgumentException($"Unknown option '{option}'.");
         }
     }
 
     SvgRenderOptions defaults = new();
+    int resolvedWidth = defaults.Width;
+    int resolvedHeight = defaults.Height;
+    if (sizePreset.HasValue)
+    {
+        SvgRenderSize size = SvgRenderSizePresets.Get(sizePreset.Value);
+        resolvedWidth = size.Width;
+        resolvedHeight = size.Height;
+    }
+
+    resolvedWidth = width ?? resolvedWidth;
+    resolvedHeight = height ?? resolvedHeight;
+
     return new SvgRenderOptions
     {
         LayoutMode = layoutMode ?? defaults.LayoutMode,
-        Width = width ?? defaults.Width,
-        Height = height ?? defaults.Height,
+        MapStyle = mapStyle ?? defaults.MapStyle,
+        Width = resolvedWidth,
+        Height = resolvedHeight,
         Padding = padding ?? defaults.Padding,
         Margin = padding ?? defaults.Margin,
         LegendWidth = legendWidth ?? defaults.LegendWidth,
@@ -127,7 +203,21 @@ static SvgRenderOptions ParseRenderOptions(string[] optionArgs)
         LabelGap = defaults.LabelGap,
         EnableCenterExpansion = centerExpansion,
         CenterExpansionStrength = defaults.CenterExpansionStrength,
-        GridSize = gridSize ?? defaults.GridSize
+        GridSize = gridSize ?? defaults.GridSize,
+        HideGenericStationLabels = hideGenericLabels,
+        HideCrowdedLabels = hideCrowdedLabels,
+        AlwaysShowInterchanges = alwaysShowInterchanges || defaults.AlwaysShowInterchanges,
+        AlwaysShowTerminals = alwaysShowTerminals || defaults.AlwaysShowTerminals,
+        UsePathPoints = usePathPoints,
+        PathPointSimplificationEnabled = simplifyPathPoints ?? defaults.PathPointSimplificationEnabled,
+        PathPointSimplificationTolerance = pathSimplificationTolerance ?? defaults.PathPointSimplificationTolerance,
+        MinPathSegmentLength = minPathSegmentLength ?? defaults.MinPathSegmentLength,
+        AdaptivePathPointSimplificationEnabled = defaults.AdaptivePathPointSimplificationEnabled,
+        EnableParallelCorridorOffset = enableParallelCorridorOffset,
+        EnableServiceFamilyMerge = enableServiceFamilyMerge,
+        EnableSharedCorridorCompositeStroke = enableSharedCorridorCompositeStroke,
+        EnableExpressCenterStripe = enableExpressCenterStripe,
+        SchematicMinimumStationSpacing = schematicMinimumStationSpacing ?? defaults.SchematicMinimumStationSpacing
     };
 }
 
@@ -138,7 +228,32 @@ static SvgLayoutMode ReadLayoutMode(string[] args, ref int index, string option)
     {
         "geographic" => SvgLayoutMode.Geographic,
         "schematic-lite" => SvgLayoutMode.SchematicLite,
-        _ => throw new ArgumentException($"{option} expects 'geographic' or 'schematic-lite'.")
+        "schematic-v2" => SvgLayoutMode.SchematicV2,
+        _ => throw new ArgumentException($"{option} expects 'geographic', 'schematic-lite', or 'schematic-v2'.")
+    };
+}
+
+static SvgMapStyle ReadMapStyle(string[] args, ref int index, string option)
+{
+    string value = ReadValue(args, ref index, option);
+    return value switch
+    {
+        "standard" => SvgMapStyle.Standard,
+        "transit-map" => SvgMapStyle.TransitMap,
+        _ => throw new ArgumentException($"{option} expects 'standard' or 'transit-map'.")
+    };
+}
+
+static SvgRenderSizePreset ReadSizePreset(string[] args, ref int index, string option)
+{
+    string value = ReadValue(args, ref index, option);
+    return value switch
+    {
+        "compact" => SvgRenderSizePreset.Compact,
+        "standard" => SvgRenderSizePreset.Standard,
+        "poster" => SvgRenderSizePreset.Poster,
+        "ultra" => SvgRenderSizePreset.Ultra,
+        _ => throw new ArgumentException($"{option} expects 'compact', 'standard', 'poster', or 'ultra'.")
     };
 }
 

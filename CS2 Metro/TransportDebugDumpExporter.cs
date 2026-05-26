@@ -1,5 +1,6 @@
 using Game;
 using Game.SceneFlow;
+using Game.UI;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -90,6 +91,8 @@ namespace CS2_Metro
                 WriteJson(jsonPath, document);
                 File.WriteAllText(textPath, BuildTextReport(document), new UTF8Encoding(false));
 
+                MetroTrackGeometryDebugExporter.Export(updateSystem);
+
                 Mod.log.Info($"Export Transport Debug Dump succeeded. JSON: {jsonPath}. TXT: {textPath}");
                 return true;
             }
@@ -104,7 +107,7 @@ namespace CS2_Metro
         {
             TransportDebugDumpDocument document = new TransportDebugDumpDocument
             {
-                dumpVersion = "0.2.5",
+                dumpVersion = VersionInfo.ReleaseVersion,
                 exportedAtUtc = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
                 jsonPath = jsonPath,
                 textPath = textPath,
@@ -142,6 +145,16 @@ namespace CS2_Metro
             {
                 document.exceptions.Add($"Entity scan failed: {ex}");
                 Mod.log.Error($"Transport debug dump entity scan failed: {ex}");
+            }
+
+            try
+            {
+                document.routeGeometryDiagnostics = RouteGeometryDiagnostics.BuildSubwayTransportLineReport(updateSystem.EntityManager, TryGetNameSystem(world));
+            }
+            catch (Exception ex)
+            {
+                document.exceptions.Add($"Route geometry diagnostics failed: {ex}");
+                Mod.log.Error($"Transport debug dump route geometry diagnostics failed: {ex}");
             }
 
             return document;
@@ -190,6 +203,18 @@ namespace CS2_Metro
             catch (Exception ex)
             {
                 return $"Failed: {ex.GetType().Name}: {ex.Message}";
+            }
+        }
+
+        private static NameSystem TryGetNameSystem(World world)
+        {
+            try
+            {
+                return world != null && world.IsCreated ? world.GetExistingSystemManaged<NameSystem>() : null;
+            }
+            catch
+            {
+                return null;
             }
         }
 
@@ -642,6 +667,12 @@ namespace CS2_Metro
             AppendTextList(text, "Warnings", document.warnings);
             AppendTextList(text, "Exceptions", document.exceptions);
 
+            if (!string.IsNullOrWhiteSpace(document.routeGeometryDiagnostics))
+            {
+                text.AppendLine(document.routeGeometryDiagnostics);
+                text.AppendLine();
+            }
+
             text.AppendLine("Candidate Groups");
             foreach (TransportCandidateGroup group in document.candidateGroups)
             {
@@ -710,4 +741,3 @@ namespace CS2_Metro
         }
     }
 }
-

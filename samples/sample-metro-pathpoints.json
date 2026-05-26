@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "generator": {
+    "name": "CS2 Metro Diagram Sample",
+    "version": "v0.1.0-alpha.1"
+  },
+  "game": {
+    "name": "Sample",
+    "version": "offline"
+  },
+  "city": {
+    "name": "Path Geometry City",
+    "exportedAtUtc": "2026-05-26T00:00:00Z"
+  },
+  "network": {
+    "type": "metro",
+    "stations": [
+      {
+        "id": "station_west",
+        "name": "West",
+        "position": { "x": 0, "z": 0 },
+        "lines": ["line_path"],
+        "isInterchange": false
+      },
+      {
+        "id": "station_central",
+        "name": "Central Bend",
+        "position": { "x": 100, "z": 0 },
+        "lines": ["line_path"],
+        "isInterchange": false
+      },
+      {
+        "id": "station_east",
+        "name": "East",
+        "position": { "x": 200, "z": 0 },
+        "lines": ["line_path"],
+        "isInterchange": false
+      }
+    ],
+    "lines": [
+      {
+        "id": "line_path",
+        "name": "Path Line",
+        "color": "#D71920",
+        "mode": "metro",
+        "stops": ["station_west", "station_central", "station_east"],
+        "pathPoints": [
+          { "x": 0, "z": 0, "source": "RouteSegment.PathTargets", "segmentEntity": "10:1" },
+          { "x": 70, "z": 80, "source": "RouteSegment.PathTargets", "segmentEntity": "10:1" },
+          { "x": 70, "z": 80, "source": "RouteSegment.PathTargets", "segmentEntity": "11:1" },
+          { "x": 135, "z": 95, "source": "RouteSegment.PathTargets", "segmentEntity": "11:1" },
+          { "x": 200, "z": 0, "source": "RouteSegment.PathTargets", "segmentEntity": "12:1" }
+        ]
+      }
+    ]
+  }
+}

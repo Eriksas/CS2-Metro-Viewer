@@ -32,6 +32,9 @@ namespace CS2_Metro
 
         [DataMember(Order = 9)]
         public List<string> exceptions { get; set; } = new List<string>();
+
+        [DataMember(Order = 10)]
+        public string routeGeometryDiagnostics { get; set; }
     }
 
     [DataContract]
@@ -153,4 +156,3 @@ namespace CS2_Metro
         public string value { get; set; }
     }
 }
-

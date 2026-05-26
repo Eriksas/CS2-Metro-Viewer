@@ -65,6 +65,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Compile Include="..\src\MetroDiagram.Core\Geometry\PathGeometrySampler.cs" Link="Shared\PathGeometrySampler.cs" />
+		<Compile Include="..\src\MetroDiagram.Core\Exporting\ExportSnapshotPathBuilder.cs" Link="Shared\ExportSnapshotPathBuilder.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<None Include="$(ModPropsFile)" Link="Properties\Mod.props" />
 		<None Include="$(ModTargetsFile)" Link="Properties\Mod.targets" />
 	</ItemGroup>

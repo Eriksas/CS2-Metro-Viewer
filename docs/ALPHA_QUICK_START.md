@@ -1,0 +1,86 @@
+# CS2 Metro Diagram v0.1.0-alpha.2-candidate Quick Start
+
+This is an alpha build for testing. It is not a stable release.
+
+## What Is Included
+
+- A Cities: Skylines II mod that exports metro/subway data to JSON.
+- A local Windows Viewer that opens the exported JSON, previews SVG, switches layout mode, adjusts basic render options, and saves SVG.
+- Sample JSON files for testing without the game.
+
+## Install The CS2 Mod
+
+1. Copy the packaged `Mod\CS2 Metro` folder into the Cities: Skylines II local mods folder used by your game setup.
+2. Start Cities: Skylines II.
+3. Enable `CS2 Metro Diagram` in the game's mod list.
+4. Load or create a city before exporting real metro data.
+
+The exact mod folder can vary by CS2 installation and local modding setup. If you built the project locally, the current local mod artifact is usually under:
+
+```text
+artifacts\cs2-local-mods\CS2 Metro
+```
+
+## Export Real Metro JSON
+
+1. Open a city in Cities: Skylines II.
+2. Open `Options > CS2 Metro Diagram > Main > Export`.
+3. Click `Export Real Metro JSON`.
+4. Check the game/mod log if export fails.
+
+The default real export path is:
+
+```text
+D:\CS2MetroDiagram\metro-export.json
+```
+
+The Viewer also checks:
+
+```text
+Documents\CS2MetroDiagram\metro-export.json
+```
+
+Diagnostics are written next to the export:
+
+```text
+D:\CS2MetroDiagram\metro-export-diagnostics.txt
+```
+
+Each real export also writes timestamped snapshots under:
+
+```text
+D:\CS2MetroDiagram\exports\
+```
+
+`Open Default Export` opens the latest `metro-export.json`; use `Open JSON` to open a snapshot manually.
+
+## Start The Viewer
+
+1. Open the release package.
+2. Go to the `Viewer` folder.
+3. Double-click `MetroDiagram.Viewer.exe`.
+
+## Open The Export
+
+1. Click `Open Default Export` if it is enabled.
+2. If it is disabled, click `Open JSON`.
+3. Select `D:\CS2MetroDiagram\metro-export.json` or another metro export JSON.
+
+## Switch Layout
+
+Use the `Layout` dropdown:
+
+- `geographic`: normalized source coordinate rendering.
+- `schematic-lite`: render-time grid snapping with horizontal, vertical, and 45-degree line segments where possible.
+
+Click `Refresh Preview` after changing numeric settings.
+
+## Save SVG
+
+1. Click `Save SVG`.
+2. Choose an output path.
+3. Open the saved `.svg` in a browser or vector editor.
+
+## Sample Files
+
+The release package includes sample JSON files under `samples`. They can be opened directly in the Viewer without launching Cities: Skylines II.

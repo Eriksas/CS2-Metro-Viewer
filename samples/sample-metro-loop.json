@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "generator": {
     "name": "CS2 Metro Diagram",
-    "version": "0.1.0"
+    "version": "v0.1.0-alpha.1"
   },
   "game": {
     "name": "Cities: Skylines II",
@@ -94,4 +94,3 @@
     ]
   }
 }
-

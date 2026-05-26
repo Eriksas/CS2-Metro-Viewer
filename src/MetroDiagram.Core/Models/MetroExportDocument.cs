@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using MetroDiagram.Core;
 
 namespace MetroDiagram.Core.Models;
 
@@ -26,7 +27,7 @@ public sealed class GeneratorInfo
     public string? Name { get; set; } = "CS2 Metro Diagram";
 
     [JsonPropertyName("version")]
-    public string? Version { get; set; } = "0.1.0";
+    public string? Version { get; set; } = MetroDiagramAppInfo.Version;
 }
 
 public sealed class GameInfo
@@ -93,6 +94,24 @@ public sealed class MetroLine
 
     [JsonPropertyName("stops")]
     public List<string>? Stops { get; set; } = [];
+
+    [JsonPropertyName("pathPoints")]
+    public List<MetroPathPoint>? PathPoints { get; set; } = [];
+}
+
+public sealed class MetroPathPoint
+{
+    [JsonPropertyName("x")]
+    public double X { get; set; }
+
+    [JsonPropertyName("z")]
+    public double Z { get; set; }
+
+    [JsonPropertyName("source")]
+    public string? Source { get; set; }
+
+    [JsonPropertyName("segmentEntity")]
+    public string? SegmentEntity { get; set; }
 }
 
 public sealed class MetroPosition
@@ -103,4 +122,3 @@ public sealed class MetroPosition
     [JsonPropertyName("z")]
     public double Z { get; set; }
 }
-

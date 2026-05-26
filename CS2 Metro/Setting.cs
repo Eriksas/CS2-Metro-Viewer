@@ -77,7 +77,7 @@ namespace CS2_Metro
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.ExportRealMetroJson)), "Export Real Metro JSON" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.ExportRealMetroJson)), "Writes a narrow real metro export from current CS2 transport line data. No SVG preview is generated in-game." },
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.ExportTransportDebugDump)), "Export Transport Debug Dump" },
-                { m_Setting.GetOptionDescLocaleID(nameof(Setting.ExportTransportDebugDump)), "Writes transport-related ECS diagnostics for manual analysis. This does not export a real metro diagram." }
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.ExportTransportDebugDump)), "Writes transport-related ECS diagnostics, including metro track geometry debug files, for manual analysis. This does not export a real metro diagram." }
             };
         }
 
