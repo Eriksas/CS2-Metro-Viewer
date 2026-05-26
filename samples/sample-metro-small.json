@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "generator": {
+    "name": "CS2 Metro Diagram",
+    "version": "0.1.0"
+  },
+  "game": {
+    "name": "Cities: Skylines II",
+    "version": "unknown"
+  },
+  "city": {
+    "name": "Example Metroville",
+    "exportedAtUtc": "2026-05-26T12:00:00Z"
+  },
+  "network": {
+    "type": "metro",
+    "stations": [
+      {
+        "id": "station_central",
+        "name": "Central",
+        "position": { "x": 1000, "z": 900 },
+        "lines": ["line_red"],
+        "isInterchange": false
+      },
+      {
+        "id": "station_market",
+        "name": "Market Street",
+        "position": { "x": 1450, "z": 980 },
+        "lines": ["line_red"],
+        "isInterchange": false
+      },
+      {
+        "id": "station_garden",
+        "name": "Garden Park",
+        "position": { "x": 1900, "z": 1180 },
+        "lines": ["line_red"],
+        "isInterchange": false
+      },
+      {
+        "id": "station_north_pier",
+        "name": "North Pier",
+        "position": { "x": 2450, "z": 1500 },
+        "lines": ["line_red"],
+        "isInterchange": false
+      }
+    ],
+    "lines": [
+      {
+        "id": "line_red",
+        "name": "Red Line",
+        "color": "#D71920",
+        "mode": "metro",
+        "stops": [
+          "station_central",
+          "station_market",
+          "station_garden",
+          "station_north_pier"
+        ]
+      }
+    ]
+  }
+}
+

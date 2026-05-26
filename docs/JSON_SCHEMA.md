@@ -1,0 +1,112 @@
+# JSON Schema
+
+This document describes the v0.1 `metro.json` shape used by the offline renderer.
+
+## Root
+
+```json
+{
+  "schemaVersion": 1,
+  "generator": {},
+  "game": {},
+  "city": {},
+  "network": {}
+}
+```
+
+## Required Version
+
+- `schemaVersion`: must be `1`.
+
+Unsupported `schemaVersion` values are load errors.
+
+## Generator
+
+- `name`: generator name.
+- `version`: generator version.
+
+## Game
+
+- `name`: source game name.
+- `version`: source game version, or `unknown`.
+
+## City
+
+- `name`: city name. Missing or blank values are normalized to `Unnamed City`.
+- `exportedAtUtc`: ISO-8601 UTC timestamp when available.
+
+## Network
+
+- `type`: currently `metro`.
+- `stations`: array of station objects.
+- `lines`: array of line objects.
+
+## Station
+
+```json
+{
+  "id": "station_001",
+  "name": "Central",
+  "position": { "x": 1200.5, "z": 830.2 },
+  "lines": ["line_001"],
+  "isInterchange": false
+}
+```
+
+Required fields:
+
+- `id`
+- `position.x`
+- `position.z`
+
+Fallbacks:
+
+- Missing or blank `name` becomes `Station N`.
+- Missing `lines` becomes an empty array.
+- Missing `isInterchange` is treated as `false`.
+- Missing `position` records a warning; the station is skipped by the renderer until it has coordinates.
+
+## Line
+
+```json
+{
+  "id": "line_001",
+  "name": "Line 1",
+  "color": "#D71920",
+  "mode": "metro",
+  "stops": ["station_001", "station_002"]
+}
+```
+
+Required fields:
+
+- `id`
+- `stops`
+
+Fallbacks:
+
+- Missing or blank `name` becomes `Line N`.
+- Missing or invalid `color` receives an internal palette color.
+- Missing `mode` becomes `metro`.
+- Missing `stops` becomes an empty array.
+
+## Validation Warnings
+
+The loader records warnings for duplicate IDs, missing station references, invalid colors, missing fallback values, and lines with fewer than two renderable stops.
+
+Missing station references are non-fatal in Phase 1.5. The loader records a clear message in this form:
+
+```text
+Missing station reference: line 'line_id' stop 'station_id' does not match any station id; that stop will be skipped.
+```
+
+This allows the CLI to generate an SVG from the remaining valid stops while still reporting the data problem.
+
+## Rendering Rules
+
+- Route geometry uses raw `position.x` and `position.z` coordinates normalized into the SVG canvas.
+- The renderer reserves a right-side legend area so route polylines do not overlap the legend.
+- Stations shared by more than one line, or marked with `isInterchange = true`, render with a larger interchange marker.
+- Empty networks render a valid SVG with an empty-network notice.
+- Complex schematic layout, grid snapping, and label collision avoidance are not part of Phase 1.5.
+

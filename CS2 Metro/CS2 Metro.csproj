@@ -1,0 +1,72 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<Configurations>Debug;Release</Configurations>
+		<CsiiToolPath Condition="'$(CsiiToolPath)' == ''">$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))</CsiiToolPath>
+	
+		<!--The file where mod information which is required for publishing mod on PDX mods are stored-->
+		<PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
+	</PropertyGroup>
+	
+	<!--Imports must be after PropertyGroup block-->
+	<Import Project="$(CsiiToolPath)\Mod.props" Condition="'$(CsiiToolPath)' != ''" />
+	<Import Project="$(CsiiToolPath)\Mod.targets" Condition="'$(CsiiToolPath)' != ''" />
+
+	<Target Name="RequireCsiiToolPath" BeforeTargets="BeforeBuild" Condition="'$(CsiiToolPath)' == ''">
+		<Error Text="CSII_TOOLPATH is not configured. Build from the CS2 modding toolchain/Visual Studio environment or pass /p:CsiiToolPath=&quot;path-to-.ModdingToolchain&quot;." />
+	</Target>
+
+	<ItemGroup>
+		<Reference Include="Game">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Colossal.Core">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Colossal.Logging">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Colossal.Localization">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Colossal.IO.AssetDatabase">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="UnityEngine.CoreModule">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Unity.Burst">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Unity.Collections">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Unity.Entities">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Unity.Mathematics">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="System.Runtime.Serialization">
+			<Private>false</Private>
+		</Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Reference Update="System">
+			<Private>false</Private>
+		</Reference>
+		<Reference Update="System.Core">
+			<Private>false</Private>
+		</Reference>
+		<Reference Update="System.Data">
+			<Private>false</Private>
+		</Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="$(ModPropsFile)" Link="Properties\Mod.props" />
+		<None Include="$(ModTargetsFile)" Link="Properties\Mod.targets" />
+	</ItemGroup>
+
+</Project>

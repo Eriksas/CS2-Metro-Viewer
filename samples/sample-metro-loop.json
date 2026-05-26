@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "generator": {
+    "name": "CS2 Metro Diagram",
+    "version": "0.1.0"
+  },
+  "game": {
+    "name": "Cities: Skylines II",
+    "version": "unknown"
+  },
+  "city": {
+    "name": "Loop City",
+    "exportedAtUtc": "2026-05-26T12:15:00Z"
+  },
+  "network": {
+    "type": "metro",
+    "stations": [
+      {
+        "id": "loop_harbor",
+        "name": "Harbor",
+        "position": { "x": 900, "z": 600 },
+        "lines": ["line_loop"],
+        "isInterchange": false
+      },
+      {
+        "id": "loop_museum",
+        "name": "Museum",
+        "position": { "x": 1320, "z": 660 },
+        "lines": ["line_loop"],
+        "isInterchange": false
+      },
+      {
+        "id": "loop_station",
+        "name": "Central Station",
+        "position": { "x": 1580, "z": 1040 },
+        "lines": ["line_loop", "line_spur"],
+        "isInterchange": true
+      },
+      {
+        "id": "loop_garden",
+        "name": "Garden",
+        "position": { "x": 1280, "z": 1420 },
+        "lines": ["line_loop"],
+        "isInterchange": false
+      },
+      {
+        "id": "loop_old_town",
+        "name": "Old Town",
+        "position": { "x": 820, "z": 1330 },
+        "lines": ["line_loop"],
+        "isInterchange": false
+      },
+      {
+        "id": "loop_riverside",
+        "name": "Riverside",
+        "position": { "x": 620, "z": 940 },
+        "lines": ["line_loop"],
+        "isInterchange": false
+      },
+      {
+        "id": "loop_convention",
+        "name": "Convention",
+        "position": { "x": 1960, "z": 1080 },
+        "lines": ["line_spur"],
+        "isInterchange": false
+      }
+    ],
+    "lines": [
+      {
+        "id": "line_loop",
+        "name": "Circle Line",
+        "color": "#92278F",
+        "mode": "metro",
+        "stops": [
+          "loop_harbor",
+          "loop_museum",
+          "loop_station",
+          "loop_garden",
+          "loop_old_town",
+          "loop_riverside",
+          "loop_harbor"
+        ]
+      },
+      {
+        "id": "line_spur",
+        "name": "Convention Spur",
+        "color": "#00AEEF",
+        "mode": "metro",
+        "stops": [
+          "loop_station",
+          "loop_convention"
+        ]
+      }
+    ]
+  }
+}
+

@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "generator": {
+    "name": "CS2 Metro Diagram",
+    "version": "0.1.0"
+  },
+  "game": {
+    "name": "Cities: Skylines II",
+    "version": "unknown"
+  },
+  "city": {
+    "name": "Branchwater",
+    "exportedAtUtc": "2026-05-26T12:10:00Z"
+  },
+  "network": {
+    "type": "metro",
+    "stations": [
+      {
+        "id": "branch_west",
+        "name": "West End",
+        "position": { "x": 300, "z": 900 },
+        "lines": ["line_orange_main"],
+        "isInterchange": false
+      },
+      {
+        "id": "branch_civic",
+        "name": "Civic Center",
+        "position": { "x": 720, "z": 900 },
+        "lines": ["line_orange_main"],
+        "isInterchange": false
+      },
+      {
+        "id": "branch_junction",
+        "name": "Junction",
+        "position": { "x": 1120, "z": 900 },
+        "lines": ["line_orange_main", "line_orange_branch"],
+        "isInterchange": true
+      },
+      {
+        "id": "branch_east",
+        "name": "East Market",
+        "position": { "x": 1540, "z": 900 },
+        "lines": ["line_orange_main"],
+        "isInterchange": false
+      },
+      {
+        "id": "branch_terminal",
+        "name": "Airport Terminal",
+        "position": { "x": 1980, "z": 900 },
+        "lines": ["line_orange_main"],
+        "isInterchange": false
+      },
+      {
+        "id": "branch_university",
+        "name": "University",
+        "position": { "x": 1220, "z": 1240 },
+        "lines": ["line_orange_branch"],
+        "isInterchange": false
+      },
+      {
+        "id": "branch_hills",
+        "name": "North Hills",
+        "position": { "x": 1360, "z": 1600 },
+        "lines": ["line_orange_branch"],
+        "isInterchange": false
+      }
+    ],
+    "lines": [
+      {
+        "id": "line_orange_main",
+        "name": "Orange Main",
+        "color": "#F7941D",
+        "mode": "metro",
+        "stops": [
+          "branch_west",
+          "branch_civic",
+          "branch_junction",
+          "branch_east",
+          "branch_terminal"
+        ]
+      },
+      {
+        "id": "line_orange_branch",
+        "name": "Orange Branch",
+        "color": "#F7941D",
+        "mode": "metro",
+        "stops": [
+          "branch_junction",
+          "branch_university",
+          "branch_hills"
+        ]
+      }
+    ]
+  }
+}
+

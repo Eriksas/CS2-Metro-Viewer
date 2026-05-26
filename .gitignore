@@ -1,0 +1,38 @@
+# Build output
+bin/
+obj/
+out/
+artifacts/
+TestResults/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider
+.idea/
+*.DotSettings.user
+
+# VS Code
+.vscode/
+
+# Generated diagrams and exports
+output.svg
+*.tmp.svg
+samples/generated-svg/
+metro.json
+test-export.json
+metro-export.json
+metro-export-diagnostics.txt
+debug-dump.json
+debug-dump.txt
+metro-debug-entities.txt
+metro-debug-components.json
+metro-debug-lines.json
+
+# OS files
+Thumbs.db
+Desktop.ini

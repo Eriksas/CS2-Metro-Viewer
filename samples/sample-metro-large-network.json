@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "generator": {
+    "name": "CS2 Metro Diagram",
+    "version": "0.1.0"
+  },
+  "game": {
+    "name": "Cities: Skylines II",
+    "version": "unknown"
+  },
+  "city": {
+    "name": "Greater Sample City",
+    "exportedAtUtc": "2026-05-26T12:25:00Z"
+  },
+  "network": {
+    "type": "metro",
+    "stations": [
+      { "id": "large_w1", "name": "Westport", "position": { "x": 200, "z": 900 }, "lines": ["line_red"] },
+      { "id": "large_w2", "name": "Warehouse", "position": { "x": 560, "z": 930 }, "lines": ["line_red"] },
+      { "id": "large_central", "name": "Central", "position": { "x": 920, "z": 940 }, "lines": ["line_red", "line_blue", "line_green"], "isInterchange": true },
+      { "id": "large_e1", "name": "Stadium", "position": { "x": 1300, "z": 900 }, "lines": ["line_red"] },
+      { "id": "large_e2", "name": "East Point", "position": { "x": 1680, "z": 860 }, "lines": ["line_red"] },
+      { "id": "large_south", "name": "South Park", "position": { "x": 920, "z": 360 }, "lines": ["line_blue"] },
+      { "id": "large_mid_south", "name": "Canal", "position": { "x": 920, "z": 650 }, "lines": ["line_blue"] },
+      { "id": "large_mid_north", "name": "Library", "position": { "x": 920, "z": 1240 }, "lines": ["line_blue"] },
+      { "id": "large_north", "name": "Northgate", "position": { "x": 920, "z": 1540 }, "lines": ["line_blue"] },
+      { "id": "large_sw", "name": "Old Mill", "position": { "x": 360, "z": 420 }, "lines": ["line_green"] },
+      { "id": "large_garden", "name": "Botanic", "position": { "x": 640, "z": 680 }, "lines": ["line_green"] },
+      { "id": "large_university", "name": "University", "position": { "x": 1220, "z": 1200 }, "lines": ["line_green", "line_purple"], "isInterchange": true },
+      { "id": "large_ne", "name": "Tech Park", "position": { "x": 1540, "z": 1480 }, "lines": ["line_green"] },
+      { "id": "large_airport", "name": "Airport", "position": { "x": 1900, "z": 1700 }, "lines": ["line_green"] },
+      { "id": "large_harbor", "name": "Harbor", "position": { "x": 240, "z": 1260 }, "lines": ["line_yellow"] },
+      { "id": "large_market", "name": "Market", "position": { "x": 520, "z": 1160 }, "lines": ["line_yellow"] },
+      { "id": "large_theatre", "name": "Theatre", "position": { "x": 780, "z": 1080 }, "lines": ["line_yellow"] },
+      { "id": "large_museum", "name": "Museum", "position": { "x": 1120, "z": 1040 }, "lines": ["line_yellow"] },
+      { "id": "large_river", "name": "Riverfront", "position": { "x": 1440, "z": 1120 }, "lines": ["line_yellow", "line_purple"], "isInterchange": true },
+      { "id": "large_island", "name": "Island", "position": { "x": 1780, "z": 1220 }, "lines": ["line_yellow"] },
+      { "id": "large_quarry", "name": "Quarry", "position": { "x": 1180, "z": 460 }, "lines": ["line_purple"] },
+      { "id": "large_expo", "name": "Expo", "position": { "x": 1460, "z": 660 }, "lines": ["line_purple"] },
+      { "id": "large_arena", "name": "Arena", "position": { "x": 1660, "z": 920 }, "lines": ["line_purple"] },
+      { "id": "large_campus", "name": "Campus East", "position": { "x": 1460, "z": 1360 }, "lines": ["line_purple"] }
+    ],
+    "lines": [
+      {
+        "id": "line_red",
+        "name": "Red Line",
+        "color": "#D71920",
+        "mode": "metro",
+        "stops": ["large_w1", "large_w2", "large_central", "large_e1", "large_e2"]
+      },
+      {
+        "id": "line_blue",
+        "name": "Blue Line",
+        "color": "#0072BC",
+        "mode": "metro",
+        "stops": ["large_south", "large_mid_south", "large_central", "large_mid_north", "large_north"]
+      },
+      {
+        "id": "line_green",
+        "name": "Green Line",
+        "color": "#00A651",
+        "mode": "metro",
+        "stops": ["large_sw", "large_garden", "large_central", "large_university", "large_ne", "large_airport"]
+      },
+      {
+        "id": "line_yellow",
+        "name": "Harbor Line",
+        "color": "#F7941D",
+        "mode": "metro",
+        "stops": ["large_harbor", "large_market", "large_theatre", "large_museum", "large_river", "large_island"]
+      },
+      {
+        "id": "line_purple",
+        "name": "Purple Line",
+        "color": "#92278F",
+        "mode": "metro",
+        "stops": ["large_quarry", "large_expo", "large_arena", "large_river", "large_campus", "large_university"]
+      }
+    ]
+  }
+}
+

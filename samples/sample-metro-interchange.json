@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "generator": {
+    "name": "CS2 Metro Diagram",
+    "version": "0.1.0"
+  },
+  "game": {
+    "name": "Cities: Skylines II",
+    "version": "unknown"
+  },
+  "city": {
+    "name": "Interchange City",
+    "exportedAtUtc": "2026-05-26T12:05:00Z"
+  },
+  "network": {
+    "type": "metro",
+    "stations": [
+      {
+        "id": "station_west",
+        "name": "West Gate",
+        "position": { "x": 700, "z": 900 },
+        "lines": ["line_blue"],
+        "isInterchange": false
+      },
+      {
+        "id": "station_crossroads",
+        "name": "Crossroads",
+        "position": { "x": 1200, "z": 900 },
+        "lines": ["line_blue", "line_green"],
+        "isInterchange": true
+      },
+      {
+        "id": "station_east",
+        "name": "East Harbor",
+        "position": { "x": 1700, "z": 900 },
+        "lines": ["line_blue"],
+        "isInterchange": false
+      },
+      {
+        "id": "station_north",
+        "name": "North Hill",
+        "position": { "x": 1200, "z": 1350 },
+        "lines": ["line_green"],
+        "isInterchange": false
+      },
+      {
+        "id": "station_south",
+        "name": "South Village",
+        "position": { "x": 1200, "z": 450 },
+        "lines": ["line_green"],
+        "isInterchange": false
+      }
+    ],
+    "lines": [
+      {
+        "id": "line_blue",
+        "name": "Blue Line",
+        "color": "#0072BC",
+        "mode": "metro",
+        "stops": [
+          "station_west",
+          "station_crossroads",
+          "station_east"
+        ]
+      },
+      {
+        "id": "line_green",
+        "name": "Green Line",
+        "color": "#00A651",
+        "mode": "metro",
+        "stops": [
+          "station_south",
+          "station_crossroads",
+          "station_north"
+        ]
+      }
+    ]
+  }
+}
+

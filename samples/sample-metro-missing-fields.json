@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "generator": {
+    "name": "CS2 Metro Diagram",
+    "version": "0.1.0"
+  },
+  "game": {
+    "name": "Cities: Skylines II",
+    "version": "unknown"
+  },
+  "city": {
+    "name": "",
+    "exportedAtUtc": "2026-05-26T12:20:00Z"
+  },
+  "network": {
+    "type": "metro",
+    "stations": [
+      {
+        "id": "missing_a",
+        "position": { "x": 400, "z": 500 },
+        "lines": ["line_missing_color"]
+      },
+      {
+        "id": "missing_b",
+        "name": "Named Station",
+        "position": { "x": 820, "z": 650 },
+        "lines": ["line_missing_color"]
+      },
+      {
+        "id": "missing_c",
+        "name": "",
+        "position": { "x": 1260, "z": 780 },
+        "lines": ["line_missing_color", "line_missing_name"],
+        "isInterchange": true
+      },
+      {
+        "id": "missing_d",
+        "name": "Fallback Junction",
+        "position": { "x": 1560, "z": 1120 },
+        "lines": ["line_missing_name"],
+        "isInterchange": false
+      },
+      {
+        "id": "missing_e",
+        "name": "South Quay",
+        "position": { "x": 1180, "z": 1320 },
+        "lines": ["line_missing_name"],
+        "isInterchange": false
+      }
+    ],
+    "lines": [
+      {
+        "id": "line_missing_color",
+        "name": "Needs Color",
+        "mode": "metro",
+        "stops": [
+          "missing_a",
+          "missing_b",
+          "missing_unknown_stop",
+          "missing_c"
+        ]
+      },
+      {
+        "id": "line_missing_name",
+        "color": "#8DC63F",
+        "mode": "",
+        "stops": [
+          "missing_e",
+          "missing_d",
+          "missing_c"
+        ]
+      }
+    ]
+  }
+}
+
