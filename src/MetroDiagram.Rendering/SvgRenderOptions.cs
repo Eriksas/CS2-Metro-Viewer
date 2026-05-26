@@ -40,5 +40,13 @@ public sealed class SvgRenderOptions
 
     public double GridSize { get; init; } = 32;
 
+    public bool HideGenericStationLabels { get; init; }
+
+    public bool HideCrowdedLabels { get; init; }
+
+    public bool AlwaysShowInterchanges { get; init; } = true;
+
+    public bool AlwaysShowTerminals { get; init; } = true;
+
     internal int EffectivePadding => Padding != 80 ? Padding : Margin;
 }

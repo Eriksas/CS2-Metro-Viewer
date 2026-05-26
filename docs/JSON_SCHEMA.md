@@ -1,6 +1,6 @@
 # JSON Schema
 
-This document describes the v0.1 `metro.json` shape used by the offline renderer.
+This document describes the schema version 1 `metro.json` shape used by the exporter, CLI, renderer, and Viewer.
 
 ## Root
 
@@ -23,7 +23,7 @@ Unsupported `schemaVersion` values are load errors.
 ## Generator
 
 - `name`: generator name.
-- `version`: generator version.
+- `version`: generator version, currently `v0.1.0-alpha.1` for the alpha release.
 
 ## Game
 
@@ -104,9 +104,10 @@ This allows the CLI to generate an SVG from the remaining valid stops while stil
 
 ## Rendering Rules
 
-- Route geometry uses raw `position.x` and `position.z` coordinates normalized into the SVG canvas.
+- `geographic` route geometry uses raw `position.x` and `position.z` coordinates normalized into the SVG canvas.
+- `schematic-lite` computes render-only grid-snapped coordinates from the same source positions. It does not modify JSON data.
 - The renderer reserves a right-side legend area so route polylines do not overlap the legend.
 - Stations shared by more than one line, or marked with `isInterchange = true`, render with a larger interchange marker.
 - Empty networks render a valid SVG with an empty-network notice.
-- Complex schematic layout, grid snapping, and label collision avoidance are not part of Phase 1.5.
-
+- Label hiding is a render option; station circles remain visible.
+- Complex automatic schematic layout and manual editing are not part of `v0.1.0-alpha.1`.

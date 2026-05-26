@@ -5,7 +5,7 @@ using MetroDiagram.Rendering;
 
 if (args.Length < 2 || args.Contains("--help", StringComparer.OrdinalIgnoreCase))
 {
-    Console.Error.WriteLine("Usage: MetroDiagram.Cli <input.json> <output.svg> [--layout geographic|schematic-lite] [--grid-size N] [--width N] [--height N] [--legend-width N] [--padding N] [--line-width N] [--station-radius N] [--label-font-size N] [--center-expansion]");
+    Console.Error.WriteLine("Usage: MetroDiagram.Cli <input.json> <output.svg> [--layout geographic|schematic-lite] [--grid-size N] [--width N] [--height N] [--legend-width N] [--padding N] [--line-width N] [--station-radius N] [--label-font-size N] [--center-expansion] [--hide-generic-labels] [--hide-crowded-labels] [--always-show-interchanges] [--always-show-terminals]");
     return args.Length < 2 ? 2 : 0;
 }
 
@@ -68,6 +68,10 @@ static SvgRenderOptions ParseRenderOptions(string[] optionArgs)
     SvgLayoutMode? layoutMode = null;
     double? gridSize = null;
     bool centerExpansion = false;
+    bool hideGenericLabels = false;
+    bool hideCrowdedLabels = false;
+    bool alwaysShowInterchanges = false;
+    bool alwaysShowTerminals = false;
 
     for (int i = 0; i < optionArgs.Length; i++)
     {
@@ -104,6 +108,18 @@ static SvgRenderOptions ParseRenderOptions(string[] optionArgs)
             case "--center-expansion":
                 centerExpansion = true;
                 break;
+            case "--hide-generic-labels":
+                hideGenericLabels = true;
+                break;
+            case "--hide-crowded-labels":
+                hideCrowdedLabels = true;
+                break;
+            case "--always-show-interchanges":
+                alwaysShowInterchanges = true;
+                break;
+            case "--always-show-terminals":
+                alwaysShowTerminals = true;
+                break;
             default:
                 throw new ArgumentException($"Unknown option '{option}'.");
         }
@@ -127,7 +143,11 @@ static SvgRenderOptions ParseRenderOptions(string[] optionArgs)
         LabelGap = defaults.LabelGap,
         EnableCenterExpansion = centerExpansion,
         CenterExpansionStrength = defaults.CenterExpansionStrength,
-        GridSize = gridSize ?? defaults.GridSize
+        GridSize = gridSize ?? defaults.GridSize,
+        HideGenericStationLabels = hideGenericLabels,
+        HideCrowdedLabels = hideCrowdedLabels,
+        AlwaysShowInterchanges = alwaysShowInterchanges || defaults.AlwaysShowInterchanges,
+        AlwaysShowTerminals = alwaysShowTerminals || defaults.AlwaysShowTerminals
     };
 }
 

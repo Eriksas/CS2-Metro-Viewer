@@ -248,3 +248,189 @@ Render a real export in both layout modes:
 dotnet run --project src\MetroDiagram.Cli\MetroDiagram.Cli.csproj --no-restore -- metro-export.json samples\generated-svg\metro-export.geographic.svg --layout geographic
 dotnet run --project src\MetroDiagram.Cli\MetroDiagram.Cli.csproj --no-restore -- metro-export.json samples\generated-svg\metro-export.schematic-lite.svg --layout schematic-lite --grid-size 32
 ```
+
+## Phase 4A Notes
+
+- Added `src/MetroDiagram.Viewer` as a WPF app targeting `net8.0-windows`.
+- The viewer references:
+  - `MetroDiagram.Core`,
+  - `MetroDiagram.Rendering`.
+- The viewer does not reference or modify the CS2 mod project.
+- The viewer uses:
+  - `MetroJsonLoader.LoadFromFile` for JSON loading,
+  - `MetroSvgRenderer.Render` for SVG generation,
+  - WPF `OpenFileDialog` and `SaveFileDialog`,
+  - WPF built-in `WebBrowser` with `NavigateToString` for embedded preview.
+- WebView2 was not added because that would require an extra NuGet package. The built-in browser is enough for Phase 4A preview.
+- `Open JSON` defaults to `D:\CS2MetroDiagram` when that directory exists.
+- Invalid JSON clears the preview, disables save, and displays errors in the window.
+- Render option parsing uses invariant culture and reports positive-number validation errors.
+- Save writes the current SVG using UTF-8 without BOM.
+- Because the WPF project queries local Windows SDK metadata, sandboxed build can fail with access denied for `C:\Users\17865\AppData\Local\Microsoft SDKs`; running the same build under normal permissions succeeds.
+
+## Phase 4A Commands
+
+```text
+dotnet restore CS2MetroDiagram.slnx
+dotnet build CS2MetroDiagram.slnx --no-restore
+dotnet run --project src\MetroDiagram.Tests\MetroDiagram.Tests.csproj --no-restore
+dotnet build src\MetroDiagram.Viewer\MetroDiagram.Viewer.csproj --no-restore
+```
+
+## Phase 4A.1 Notes
+
+- Added manual validation checklist: `docs/VIEWER_MANUAL_TEST.md`.
+- Added package quick start: `docs/VIEWER_QUICK_START.md`.
+- Added framework-dependent publish script:
+  - `scripts/publish-viewer-framework-dependent.ps1`
+  - output: `artifacts\viewer-win-x64-framework-dependent`
+- Added self-contained publish script:
+  - `scripts/publish-viewer-self-contained.ps1`
+  - output: `artifacts\viewer-win-x64-self-contained`
+- The self-contained script uses:
+
+```text
+dotnet publish src\MetroDiagram.Viewer\MetroDiagram.Viewer.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+```
+
+- The self-contained script runs an explicit win-x64 restore first because local `NuGet.Config` clears package sources and self-contained publish needs runtime packs.
+- Runtime pack restore uses `https://api.nuget.org/v3/index.json`.
+- During validation, NuGet package download showed transient EOF/SSL retry messages, but restore eventually succeeded and the package was produced.
+- Both package scripts copy:
+  - `docs\VIEWER_QUICK_START.md` as package `README.md`,
+  - `samples\sample-metro-small.json`,
+  - generated `build-info.txt`.
+- The self-contained package produced `MetroDiagram.Viewer.exe`.
+
+## Phase 4A.1 Commands
+
+```text
+dotnet build CS2MetroDiagram.slnx --no-restore
+dotnet run --project src\MetroDiagram.Tests\MetroDiagram.Tests.csproj --no-restore
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\publish-viewer-self-contained.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\publish-viewer-framework-dependent.ps1
+```
+
+## Phase 4B Notes
+
+- The CS2 real exporter was not modified for Phase 4B.
+- The Viewer now checks these default export files on startup:
+  - `D:\CS2MetroDiagram\metro-export.json`,
+  - `Documents\CS2MetroDiagram\metro-export.json`.
+- The Viewer does not auto-open a default export; it enables `Open Default Export` when one exists.
+- `Open Export Folder` opens the best available export folder from the default export, current JSON path, `D:\CS2MetroDiagram`, or `Documents\CS2MetroDiagram`.
+- Viewer settings are stored as JSON at:
+
+```text
+Documents\CS2MetroDiagram\viewer-settings.json
+```
+
+- Saved settings include:
+  - last opened JSON path,
+  - layout mode,
+  - width, height, legend width, padding,
+  - line width, station radius, label font size, grid size,
+  - label strategy options,
+  - language.
+- The Viewer has a minimal `English` / `中文` language selector implemented through `ViewerResources.cs`.
+- No full i18n framework was added.
+- `Reset Defaults` restores render and label defaults while keeping the current language and last JSON path.
+- Rendering label strategy options added:
+  - `HideGenericStationLabels`,
+  - `HideCrowdedLabels`,
+  - `AlwaysShowInterchanges`,
+  - `AlwaysShowTerminals`.
+- Generic station names are detected by `StationLabelClassifier`.
+- Current generic/fallback detection includes:
+  - `小型地铁广场`,
+  - `现代地铁站`,
+  - `地下地铁站`,
+  - `地铁站`,
+  - `Subway Station`,
+  - `Metro Station`,
+  - `Station 1`, `Station 2`, and other `Station <number>` fallback labels.
+- Label hiding only affects text labels; station circles are always rendered.
+- `HideCrowdedLabels` hides lower-priority labels when their chosen bounding box seriously overlaps already placed higher-priority labels.
+- Interchanges and terminals are protected by default.
+- CLI options added:
+
+```text
+--hide-generic-labels --hide-crowded-labels --always-show-interchanges --always-show-terminals
+```
+
+## Phase 4B Commands
+
+```text
+dotnet build CS2MetroDiagram.slnx --no-restore
+dotnet run --project src\MetroDiagram.Tests\MetroDiagram.Tests.csproj --no-restore
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\publish-viewer-self-contained.ps1
+```
+
+## Phase 4C Notes
+
+- Release version is `v0.1.0-alpha.1`.
+- Added `Directory.Build.props` so SDK project assembly/package metadata is aligned with the alpha version.
+- Added `MetroDiagramAppInfo.Version` in Core for shared offline version text.
+- Viewer window title now appends `v0.1.0-alpha.1`.
+- Core default `GeneratorInfo.Version` now uses `v0.1.0-alpha.1`.
+- CS2 mod `VersionInfo.ReleaseVersion` is used for:
+  - `RealMetroJsonExporter` `generator.version`,
+  - `TestMetroJsonExporter` `generator.version`,
+  - `TransportDebugDumpExporter.dumpVersion`.
+- The CS2 real exporter's ECS reading logic was not changed.
+- Sample JSON `generator.version` values were updated to `v0.1.0-alpha.1`.
+- Added release-facing docs:
+  - `docs/ALPHA_QUICK_START.md`,
+  - `docs/KNOWN_ISSUES.md`,
+  - `docs/FEEDBACK_TEMPLATE.md`,
+  - `docs/CHANGELOG.md`.
+- Publish scripts now include `Version`, `BuiltAtUtc`, and `Commit` in `build-info.txt`.
+- Added release package script:
+
+```text
+scripts\package-alpha-release.ps1
+```
+
+- Release package output:
+
+```text
+artifacts\releases\CS2MetroDiagram-v0.1.0-alpha.1
+artifacts\releases\CS2MetroDiagram-v0.1.0-alpha.1-win-x64.zip
+```
+
+- Package script workflow:
+  - build `CS2MetroDiagram.slnx`,
+  - run `MetroDiagram.Tests`,
+  - publish Viewer self-contained,
+  - copy Viewer artifacts,
+  - copy current `artifacts\cs2-local-mods` into `Mod` when available,
+  - copy docs and sample JSON files,
+  - generate release `build-info.txt`,
+  - zip the release folder.
+- For the final Phase 4C package, the CS2 mod artifacts were rebuilt with the local CS2 modding toolchain before rerunning the package script, so the copied `Mod` folder contains the synced `v0.1.0-alpha.1` version string.
+- Release package smoke checks performed:
+  - `Mod\CS2 Metro\CS2 Metro.dll` contains `v0.1.0-alpha.1`,
+  - release `Viewer\MetroDiagram.Viewer.exe` starts and can be closed,
+  - zip contains root README, quick start, known issues, changelog, build info, Viewer exe, Mod DLL, and sample JSON.
+
+## Phase 4C Commands
+
+```text
+dotnet build CS2MetroDiagram.slnx --no-restore
+dotnet run --project src\MetroDiagram.Tests\MetroDiagram.Tests.csproj --no-restore
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\publish-viewer-self-contained.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\package-alpha-release.ps1
+```
+
+CS2 mod artifact rebuild command used before final packaging:
+
+```powershell
+$tool = 'E:\SteamLibrary\steamapps\common\Cities Skylines II\Cities2_Data\Content\Game\.ModdingToolchain'
+$managed = 'E:\SteamLibrary\steamapps\common\Cities Skylines II\Cities2_Data\Managed'
+$userData = 'E:\SteamLibrary\steamapps\common\Cities Skylines II\mods\Cities Skylines II'
+$unityProject = 'E:\SteamLibrary\steamapps\common\Cities Skylines II\mods\Cities Skylines II\.cache\Modding\UnityModsProject'
+$post = 'E:\SteamLibrary\steamapps\common\Cities Skylines II\Cities2_Data\Content\Game\.ModdingToolchain\ModPostProcessor\ModPostProcessor.exe'
+$mscorlib = 'E:\SteamLibrary\steamapps\common\Cities Skylines II\Cities2_Data\Managed\mscorlib.dll'
+$localMods = 'E:\CS2\CS2 Metro\artifacts\cs2-local-mods'
+dotnet build "CS2 Metro.slnx" --no-restore /p:CsiiToolPath="$tool" /p:ManagedPath="$managed" /p:UserDataPath="$userData" /p:UnityModProjectPath="$unityProject" /p:ModPostProcessorPath="$post" /p:EntitiesVersion="1.3.10" /p:MSCORLIBPath="$mscorlib" /p:LocalModsPath="$localMods"
+```

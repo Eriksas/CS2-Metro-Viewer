@@ -143,3 +143,63 @@ Reason: Phase 3B outputs must stay usable and predictable unless the user explic
 Decision: Schematic-lite starts from normalized geographic coordinates, snaps to a configurable grid, and places newly seen stops using the nearest horizontal, vertical, or 45-degree segment candidate.
 
 Reason: This produces visibly more regular route geometry without introducing a large graph-layout dependency or a complex topology optimizer.
+
+## 2026-05-26 - Build Phase 4A as a WPF viewer
+
+Decision: Add `MetroDiagram.Viewer` as a WPF desktop app that references Core and Rendering.
+
+Reason: The target user needs a simple local Windows UI, while the existing offline libraries already contain the JSON loading and SVG rendering logic.
+
+## 2026-05-26 - Use built-in WPF WebBrowser for the first embedded preview
+
+Decision: Use WPF `WebBrowser.NavigateToString` instead of adding WebView2 in Phase 4A.
+
+Reason: WebView2 would introduce an additional package dependency; the built-in control is sufficient for a local SVG preview milestone.
+
+## 2026-05-26 - Package Viewer as folder outputs, not an installer
+
+Decision: Phase 4A.1 adds PowerShell publish scripts that create framework-dependent and self-contained folder packages under `artifacts/`.
+
+Reason: The phase needs a user-runnable exe package without taking on installer design, signing, update flows, or distribution infrastructure.
+
+## 2026-05-26 - Keep self-contained package single-file
+
+Decision: The self-contained win-x64 Viewer package uses `PublishSingleFile=true` and `IncludeNativeLibrariesForSelfExtract=true`.
+
+Reason: A single exe is easier for normal users to run while still allowing package docs, sample JSON, and build metadata to sit next to it.
+
+## 2026-05-26 - Keep Phase 4B label filtering render-only
+
+Decision: Add generic and crowded label hiding as `SvgRenderOptions`, CLI flags, and Viewer controls without changing `MetroExportDocument` or the CS2 real exporter.
+
+Reason: Label visibility is presentation policy. The exported JSON should keep the full network data so users can rerender with different settings.
+
+## 2026-05-26 - Store Viewer settings in Documents
+
+Decision: Save Viewer preferences to `Documents\CS2MetroDiagram\viewer-settings.json`.
+
+Reason: The project already uses `CS2MetroDiagram` as a user-visible export folder, and a small JSON settings file is enough for the alpha Viewer without adding a configuration framework.
+
+## 2026-05-26 - Use a small Viewer resource dictionary for bilingual UI
+
+Decision: Implement English/Chinese Viewer UI text in `ViewerResources.cs`.
+
+Reason: Phase 4B only needs a minimal bilingual UI, so a full i18n framework would be unnecessary overhead.
+
+## 2026-05-26 - Package v0.1.0-alpha.1 as folder plus zip
+
+Decision: Phase 4C creates `artifacts\releases\CS2MetroDiagram-v0.1.0-alpha.1` and `CS2MetroDiagram-v0.1.0-alpha.1-win-x64.zip`.
+
+Reason: Alpha testers need one predictable folder structure with Mod, Viewer, docs, samples, and build metadata, without taking on installer work yet.
+
+## 2026-05-26 - Synchronize exporter version without changing exporter behavior
+
+Decision: Update CS2 exporter `generator.version` values to `v0.1.0-alpha.1` through a small mod-side version constant.
+
+Reason: Release metadata should be consistent, but Phase 4C must not change the real exporter ECS reading logic.
+
+## 2026-05-26 - Keep release docs separate from development notes
+
+Decision: Add `ALPHA_QUICK_START.md`, `KNOWN_ISSUES.md`, `FEEDBACK_TEMPLATE.md`, and `CHANGELOG.md` as release-facing documents.
+
+Reason: External testers need concise instructions and feedback guidance without reading the full development plan or internal project state.

@@ -21,6 +21,8 @@ List<(string Name, Action Test)> tests =
     ("legend sorts numeric line names naturally", LegendSortsNumericLineNamesNaturally),
     ("renderer sanitizes XML text values", RendererSanitizesXmlTextValues),
     ("schematic-lite snaps route points to grid and octilinear directions", SchematicLiteSnapsRoutePoints),
+    ("generic station name detection covers default names", GenericStationNameDetectionCoversDefaultNames),
+    ("crowded label hiding removes low priority labels only", CrowdedLabelHidingRemovesLowPriorityLabels),
     ("missing fields use documented fallbacks", MissingFieldsUseFallbacks),
     ("missing station references report a clear validation issue", MissingStationReferencesReportClearly),
     ("empty networks and empty lines do not crash", EmptyNetworksAndEmptyLinesDoNotCrash)
@@ -261,6 +263,112 @@ static void SchematicLiteSnapsRoutePoints()
     }
 }
 
+static void GenericStationNameDetectionCoversDefaultNames()
+{
+    string[] genericNames =
+    [
+        "小型地铁广场",
+        "现代地铁站",
+        "地下地铁站",
+        "地铁站",
+        "Subway Station",
+        "Metro Station",
+        "Station 1",
+        "Station 25"
+    ];
+
+    foreach (string name in genericNames)
+    {
+        Assert(StationLabelClassifier.IsGenericOrFallbackName(name), $"Expected '{name}' to be detected as generic/default.");
+    }
+
+    Assert(StationLabelClassifier.IsGenericOrFallbackName("station_a", "station_a"), "Station id fallback was not detected.");
+    Assert(!StationLabelClassifier.IsGenericOrFallbackName("Central Park"), "User station name was incorrectly treated as generic.");
+    Assert(!StationLabelClassifier.IsGenericOrFallbackName("城东站"), "Named Chinese station was incorrectly treated as generic.");
+}
+
+static void CrowdedLabelHidingRemovesLowPriorityLabels()
+{
+    List<MetroStation> stations =
+    [
+        new MetroStation
+        {
+            Id = "station_terminal",
+            Name = "Central Terminal",
+            Position = new MetroPosition { X = 0, Z = 0 },
+            Lines = ["line_test"]
+        }
+    ];
+    List<string> stops = ["station_terminal"];
+    for (int i = 1; i <= 12; i++)
+    {
+        string stationId = $"station_crowded_{i}";
+        stations.Add(new MetroStation
+        {
+            Id = stationId,
+            Name = i % 2 == 0 ? $"Local Stop {i}" : "现代地铁站",
+            Position = new MetroPosition { X = 1 + i * 0.02, Z = 1 + i * 0.02 },
+            Lines = ["line_test"]
+        });
+        stops.Add(stationId);
+    }
+
+    stations.Add(new MetroStation
+    {
+        Id = "station_end",
+        Name = "Airport",
+        Position = new MetroPosition { X = 200, Z = 160 },
+        Lines = ["line_test"]
+    });
+    stops.Add("station_end");
+
+    MetroExportDocument document = new()
+    {
+        City = new CityInfo { Name = "Crowded City" },
+        Network = new MetroNetwork
+        {
+            Stations = stations,
+            Lines =
+            [
+                new MetroLine
+                {
+                    Id = "line_test",
+                    Name = "Test Line",
+                    Color = "#D71920",
+                    Stops = stops
+                }
+            ]
+        }
+    };
+
+    SvgRenderOptions options = new()
+    {
+        Width = 500,
+        Height = 360,
+        Padding = 80,
+        Margin = 80,
+        LegendWidth = 140,
+        LabelFontSize = 18,
+        HideCrowdedLabels = true,
+        AlwaysShowTerminals = true
+    };
+
+    XDocument xml = XDocument.Parse(new MetroSvgRenderer().Render(document, options).Svg);
+    int visibleLabels = CountVisibleStationLabels(xml);
+    Assert(visibleLabels < stations.Count, $"Crowded label hiding did not reduce labels. Visible={visibleLabels}, stations={stations.Count}.");
+    Assert(HasVisibleLabel(xml, "station_terminal"), "High priority terminal label was hidden.");
+    Assert(stations.All(station => HasStationCircle(xml, station.Id!)), "One or more station circles were hidden with labels.");
+
+    SvgRenderOptions hideGenericOptions = new()
+    {
+        HideGenericStationLabels = true,
+        AlwaysShowTerminals = true
+    };
+    XDocument hiddenGenericXml = XDocument.Parse(new MetroSvgRenderer().Render(document, hideGenericOptions).Svg);
+    Assert(!HasVisibleLabel(hiddenGenericXml, "station_crowded_1"), "Generic intermediate label was not hidden by HideGenericStationLabels.");
+    Assert(HasVisibleLabel(hiddenGenericXml, "station_terminal"), "Terminal label was hidden by HideGenericStationLabels.");
+}
+
 static void MissingStationReferencesReportClearly()
 {
     MetroExportDocument document = new()
@@ -418,6 +526,32 @@ static IReadOnlyList<XElement> GetRouteElements(XDocument xml)
         .Descendants()
         .Where(element => element.Name.LocalName == "polyline" && (string?)element.Attribute("class") == "route")
         .ToList();
+}
+
+static bool HasVisibleLabel(XDocument xml, string stationId)
+{
+    return xml
+        .Descendants()
+        .Any(element => element.Name.LocalName == "text"
+            && ((string?)element.Attribute("class")) == "station-label"
+            && (string?)element.Attribute("data-station-id") == stationId);
+}
+
+static bool HasStationCircle(XDocument xml, string stationId)
+{
+    return xml
+        .Descendants()
+        .Any(element => element.Name.LocalName == "circle"
+            && (string?)element.Attribute("data-station-id") == stationId);
+}
+
+static int CountVisibleStationLabels(XDocument xml)
+{
+    return xml
+        .Descendants()
+        .Count(element => element.Name.LocalName == "text"
+            && ((string?)element.Attribute("class")) == "station-label"
+            && !string.IsNullOrWhiteSpace((string?)element.Attribute("data-station-id")));
 }
 
 static IEnumerable<(double X, double Y)> SplitPoints(string? points)

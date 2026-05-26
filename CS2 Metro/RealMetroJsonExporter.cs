@@ -650,7 +650,7 @@ namespace CS2_Metro
             json.AppendLine("  \"schemaVersion\": 1,");
             json.AppendLine("  \"generator\": {");
             json.AppendLine("    \"name\": \"CS2 Metro Diagram Real Exporter\",");
-            json.AppendLine("    \"version\": \"0.3.0-phase3a\"");
+            json.AppendLine($"    \"version\": \"{VersionInfo.ReleaseVersion}\"");
             json.AppendLine("  },");
             json.AppendLine("  \"game\": {");
             json.AppendLine("    \"name\": \"Cities: Skylines II\",");

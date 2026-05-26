@@ -412,9 +412,17 @@ public sealed class MetroSvgRenderer
 
             string name = string.IsNullOrWhiteSpace(station.Name) ? station.Id! : station.Name!;
             bool isTerminal = terminalStationIds.Contains(station.Id!);
-            bool usesFallbackName = IsFallbackStationName(name, station.Id);
-            int priority = CalculateLabelPriority(station, isTerminal, usesFallbackName);
-            labelRequests.Add(new LabelRequest(station, name, point, GetStationRadius(station, options), priority, i));
+            bool isInterchange = IsInterchange(station);
+            bool isGenericName = StationLabelClassifier.IsGenericOrFallbackName(name, station.Id);
+            bool isProtected = isInterchange && options.AlwaysShowInterchanges || isTerminal && options.AlwaysShowTerminals;
+            if (options.HideGenericStationLabels && isGenericName && !isProtected)
+            {
+                continue;
+            }
+
+            int priority = CalculateLabelPriority(isInterchange, isTerminal, isGenericName);
+            bool canHideWhenCrowded = !isProtected && (isGenericName || (!isInterchange && !isTerminal));
+            labelRequests.Add(new LabelRequest(station, name, point, GetStationRadius(station, options), priority, i, isProtected, canHideWhenCrowded));
         }
 
         SvgRect allowedBounds = CreateAllowedLabelBounds(options, hasLegend);
@@ -426,6 +434,11 @@ public sealed class MetroSvgRenderer
             .ThenBy(request => request.Index))
         {
             PlacedLabel label = ChooseLabelPlacement(request, options, placedLabelBoxes, stationObstacles, allowedBounds);
+            if (options.HideCrowdedLabels && request.CanHideWhenCrowded && label.LabelOverlapArea > GetCrowdedLabelOverlapThreshold(options))
+            {
+                continue;
+            }
+
             placedLabels.Add(label);
             placedLabelBoxes.Add(label.Box);
         }
@@ -452,15 +465,19 @@ public sealed class MetroSvgRenderer
         List<LabelCandidate> candidates = CreateLabelCandidates(request, options);
         LabelCandidate best = candidates[0];
         double bestScore = double.MaxValue;
+        double bestLabelOverlapArea = 0;
 
         for (int i = 0; i < candidates.Count; i++)
         {
             LabelCandidate candidate = candidates[i];
             double score = i * 0.01;
+            double labelOverlapArea = 0;
 
             foreach (SvgRect box in placedLabelBoxes)
             {
-                score += candidate.Box.OverlapArea(box) * 14;
+                double overlap = candidate.Box.OverlapArea(box);
+                labelOverlapArea += overlap;
+                score += overlap * 14;
             }
 
             foreach (SvgRect obstacle in stationObstacles)
@@ -474,6 +491,7 @@ public sealed class MetroSvgRenderer
             {
                 best = candidate;
                 bestScore = score;
+                bestLabelOverlapArea = labelOverlapArea;
             }
         }
 
@@ -486,7 +504,14 @@ public sealed class MetroSvgRenderer
             best.PositionName,
             best.Box,
             request.Priority,
-            request.Index);
+            request.Index,
+            bestScore,
+            bestLabelOverlapArea);
+    }
+
+    private static double GetCrowdedLabelOverlapThreshold(SvgRenderOptions options)
+    {
+        return Math.Max(48, options.LabelFontSize * options.LabelFontSize * 0.5);
     }
 
     private static List<LabelCandidate> CreateLabelCandidates(LabelRequest request, SvgRenderOptions options)
@@ -633,11 +658,11 @@ public sealed class MetroSvgRenderer
         return terminalStationIds;
     }
 
-    private static int CalculateLabelPriority(MetroStation station, bool isTerminal, bool usesFallbackName)
+    private static int CalculateLabelPriority(bool isInterchange, bool isTerminal, bool isGenericName)
     {
         int priority = 0;
 
-        if (IsInterchange(station))
+        if (isInterchange)
         {
             priority += 100;
         }
@@ -647,36 +672,13 @@ public sealed class MetroSvgRenderer
             priority += 70;
         }
 
-        priority += usesFallbackName ? -25 : 20;
+        priority += isGenericName ? -35 : 25;
         return priority;
     }
 
     private static bool IsInterchange(MetroStation station)
     {
         return station.IsInterchange || (station.Lines?.Distinct(StringComparer.Ordinal).Count() ?? 0) > 1;
-    }
-
-    private static bool IsFallbackStationName(string name, string? stationId)
-    {
-        string trimmed = name.Trim();
-        if (trimmed.Length == 0)
-        {
-            return true;
-        }
-
-        if (!string.IsNullOrWhiteSpace(stationId) && string.Equals(trimmed, stationId, StringComparison.Ordinal))
-        {
-            return true;
-        }
-
-        const string stationPrefix = "Station ";
-        if (!trimmed.StartsWith(stationPrefix, StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        string suffix = trimmed[stationPrefix.Length..];
-        return suffix.Length > 0 && suffix.All(char.IsDigit);
     }
 
     private static double GetStationRadius(MetroStation station, SvgRenderOptions options)
@@ -791,7 +793,9 @@ public sealed class MetroSvgRenderer
         SvgPoint Point,
         double StationRadius,
         int Priority,
-        int Index);
+        int Index,
+        bool IsProtected,
+        bool CanHideWhenCrowded);
 
     private readonly record struct LabelCandidate(
         string PositionName,
@@ -809,7 +813,9 @@ public sealed class MetroSvgRenderer
         string PositionName,
         SvgRect Box,
         int Priority,
-        int Index);
+        int Index,
+        double Score,
+        double LabelOverlapArea);
 
     private readonly record struct SvgRect(double Left, double Top, double Right, double Bottom)
     {

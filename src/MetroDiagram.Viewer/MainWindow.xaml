@@ -1,0 +1,99 @@
+<Window x:Class="MetroDiagram.Viewer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="CS2 Metro Diagram Viewer"
+        Width="1320"
+        Height="900"
+        MinWidth="1100"
+        MinHeight="720">
+    <Grid Background="#f4f6f8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="#ffffff" BorderBrush="#d7dde5" BorderThickness="0,0,0,1" Padding="12">
+            <DockPanel LastChildFill="True">
+                <StackPanel DockPanel.Dock="Left" Orientation="Vertical">
+                    <WrapPanel>
+                        <Button x:Name="OpenButton" Content="Open JSON" MinWidth="104" Margin="0,0,8,8" Padding="10,3" Click="OpenJson_Click" />
+                        <Button x:Name="OpenDefaultButton" Content="Open Default Export" MinWidth="148" Margin="0,0,8,8" Padding="10,3" Click="OpenDefaultExport_Click" IsEnabled="False" />
+                        <Button x:Name="OpenFolderButton" Content="Open Export Folder" MinWidth="142" Margin="0,0,8,8" Padding="10,3" Click="OpenExportFolder_Click" />
+                        <Button x:Name="RefreshButton" Content="Refresh Preview" MinWidth="126" Margin="0,0,8,8" Padding="10,3" Click="RefreshPreview_Click" />
+                        <Button x:Name="SaveButton" Content="Save SVG" MinWidth="96" Margin="0,0,12,8" Padding="10,3" Click="SaveSvg_Click" IsEnabled="False" />
+                        <Button x:Name="ResetButton" Content="Reset Defaults" MinWidth="118" Margin="0,0,16,8" Padding="10,3" Click="ResetDefaults_Click" />
+
+                        <TextBlock x:Name="LayoutLabelTextBlock" Text="Layout" VerticalAlignment="Center" Margin="0,0,6,8" />
+                        <ComboBox x:Name="LayoutComboBox" Width="150" Margin="0,0,12,8" SelectionChanged="LayoutComboBox_SelectionChanged">
+                            <ComboBoxItem Content="geographic" Tag="geographic" IsSelected="True" />
+                            <ComboBoxItem Content="schematic-lite" Tag="schematic-lite" />
+                        </ComboBox>
+
+                        <TextBlock x:Name="LanguageLabelTextBlock" Text="Language" VerticalAlignment="Center" Margin="0,0,6,8" />
+                        <ComboBox x:Name="LanguageComboBox" Width="104" Margin="0,0,0,8" SelectionChanged="LanguageComboBox_SelectionChanged">
+                            <ComboBoxItem Content="English" Tag="en" IsSelected="True" />
+                            <ComboBoxItem Content="中文" Tag="zh" />
+                        </ComboBox>
+                    </WrapPanel>
+
+                    <UniformGrid Columns="8" Margin="0,4,0,0">
+                        <StackPanel Margin="0,0,10,0">
+                            <TextBlock x:Name="WidthLabelTextBlock" Text="Width" />
+                            <TextBox x:Name="WidthTextBox" Text="1200" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,10,0">
+                            <TextBlock x:Name="HeightLabelTextBlock" Text="Height" />
+                            <TextBox x:Name="HeightTextBox" Text="800" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,10,0">
+                            <TextBlock x:Name="LegendLabelTextBlock" Text="Legend" />
+                            <TextBox x:Name="LegendWidthTextBox" Text="240" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,10,0">
+                            <TextBlock x:Name="PaddingLabelTextBlock" Text="Padding" />
+                            <TextBox x:Name="PaddingTextBox" Text="80" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,10,0">
+                            <TextBlock x:Name="LineLabelTextBlock" Text="Line" />
+                            <TextBox x:Name="LineWidthTextBox" Text="14" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,10,0">
+                            <TextBlock x:Name="StationLabelTextBlock" Text="Station" />
+                            <TextBox x:Name="StationRadiusTextBox" Text="5.5" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,10,0">
+                            <TextBlock x:Name="LabelFontLabelTextBlock" Text="Label" />
+                            <TextBox x:Name="LabelFontSizeTextBox" Text="12" />
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock x:Name="GridLabelTextBlock" Text="Grid" />
+                            <TextBox x:Name="GridSizeTextBox" Text="32" />
+                        </StackPanel>
+                    </UniformGrid>
+
+                    <WrapPanel Margin="0,12,0,0">
+                        <CheckBox x:Name="HideGenericCheckBox" Content="Hide generic station labels" Margin="0,0,18,8" Checked="RenderOptionChanged" Unchecked="RenderOptionChanged" />
+                        <CheckBox x:Name="HideCrowdedCheckBox" Content="Hide crowded labels" Margin="0,0,18,8" Checked="RenderOptionChanged" Unchecked="RenderOptionChanged" />
+                        <CheckBox x:Name="AlwaysInterchangesCheckBox" Content="Always show interchanges" Margin="0,0,18,8" Checked="RenderOptionChanged" Unchecked="RenderOptionChanged" />
+                        <CheckBox x:Name="AlwaysTerminalsCheckBox" Content="Always show terminals" Margin="0,0,0,8" Checked="RenderOptionChanged" Unchecked="RenderOptionChanged" />
+                    </WrapPanel>
+                </StackPanel>
+
+                <StackPanel DockPanel.Dock="Right" Width="420" Margin="18,0,0,0">
+                    <TextBlock x:Name="FileTextBlock" Text="No JSON loaded" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                    <TextBlock x:Name="SummaryTextBlock" Text="City: -   Lines: -   Stations: -" Margin="0,8,0,0" />
+                    <TextBlock x:Name="ErrorTextBlock" Foreground="#b42318" TextWrapping="Wrap" Margin="0,8,0,0" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Border Grid.Row="1" Margin="12" Background="#ffffff" BorderBrush="#cfd7e3" BorderThickness="1">
+            <WebBrowser x:Name="PreviewBrowser" />
+        </Border>
+
+        <Border Grid.Row="2" Background="#ffffff" BorderBrush="#d7dde5" BorderThickness="0,1,0,0" Padding="12,8">
+            <TextBlock x:Name="StatusTextBlock" Text="Ready" TextTrimming="CharacterEllipsis" />
+        </Border>
+    </Grid>
+</Window>

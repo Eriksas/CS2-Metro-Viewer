@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using MetroDiagram.Core;
 
 namespace MetroDiagram.Core.Models;
 
@@ -26,7 +27,7 @@ public sealed class GeneratorInfo
     public string? Name { get; set; } = "CS2 Metro Diagram";
 
     [JsonPropertyName("version")]
-    public string? Version { get; set; } = "0.1.0";
+    public string? Version { get; set; } = MetroDiagramAppInfo.Version;
 }
 
 public sealed class GameInfo
@@ -103,4 +104,3 @@ public sealed class MetroPosition
     [JsonPropertyName("z")]
     public double Z { get; set; }
 }
-

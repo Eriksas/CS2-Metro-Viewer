@@ -104,7 +104,7 @@ namespace CS2_Metro
         {
             TransportDebugDumpDocument document = new TransportDebugDumpDocument
             {
-                dumpVersion = "0.2.5",
+                dumpVersion = VersionInfo.ReleaseVersion,
                 exportedAtUtc = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
                 jsonPath = jsonPath,
                 textPath = textPath,
@@ -710,4 +710,3 @@ namespace CS2_Metro
         }
     }
 }
-

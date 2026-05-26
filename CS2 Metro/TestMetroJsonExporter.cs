@@ -58,7 +58,7 @@ namespace CS2_Metro
   ""schemaVersion"": 1,
   ""generator"": {
     ""name"": ""CS2 Metro Diagram Exporter Shell"",
-    ""version"": ""0.2.0""
+    ""version"": """ + VersionInfo.ReleaseVersion + @"""
   },
   ""game"": {
     ""name"": ""Cities: Skylines II"",
@@ -120,4 +120,3 @@ namespace CS2_Metro
         }
     }
 }
-
