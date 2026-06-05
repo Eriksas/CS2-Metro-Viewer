@@ -86,6 +86,55 @@ function Read-ExportMetadata {
     }
 }
 
+function Get-CurrentAppVersion {
+    param([Parameter(Mandatory = $true)][string] $RepoRoot)
+
+    $appInfoPath = Join-Path $RepoRoot 'src\MetroDiagram.Core\MetroDiagramAppInfo.cs'
+    if (-not (Test-Path -LiteralPath $appInfoPath -PathType Leaf)) {
+        return 'unknown'
+    }
+
+    $content = Get-Content -LiteralPath $appInfoPath -Raw -Encoding UTF8
+    $match = [regex]::Match($content, 'Version\s*=\s*"([^"]+)"')
+    if ($match.Success) {
+        return $match.Groups[1].Value
+    }
+
+    return 'unknown'
+}
+
+function Get-ValidationWarnings {
+    param(
+        [Parameter(Mandatory = $true)] $Metadata,
+        [Parameter(Mandatory = $true)][string] $CurrentAppVersion
+    )
+
+    $warnings = New-Object System.Collections.Generic.List[string]
+
+    if ($Metadata.GeneratorVersion -eq 'unreadable') {
+        $warnings.Add('Export generator version could not be read. Treat this bundle as diagnostic-only until the JSON is inspected.')
+    }
+    elseif ($CurrentAppVersion -ne 'unknown' -and $Metadata.GeneratorVersion -ne $CurrentAppVersion) {
+        $warnings.Add("Export generator version '$($Metadata.GeneratorVersion)' differs from current tool version '$CurrentAppVersion'. Re-export in CS2 before final alpha validation if exporter behavior matters.")
+    }
+
+    if ($Metadata.CityName -eq 'CS2 Metro Export') {
+        $warnings.Add("City name is the exporter placeholder 'CS2 Metro Export'. This is expected for older exports, but feedback should identify the real city manually.")
+    }
+
+    return $warnings
+}
+
+function Format-MarkdownList {
+    param([Parameter(Mandatory = $true)][string[]] $Items)
+
+    if ($Items.Count -eq 0) {
+        return '- none'
+    }
+
+    return ($Items | ForEach-Object { "- $_" }) -join "`r`n"
+}
+
 function Invoke-CliRender {
     param(
         [Parameter(Mandatory = $true)][string] $CliProject,
@@ -141,8 +190,12 @@ function Write-ValidationNotes {
         [Parameter(Mandatory = $true)][string] $DiagnosticsPath,
         [Parameter(Mandatory = $true)][string] $GeneratedAt,
         [Parameter(Mandatory = $true)] $Metadata,
-        [Parameter(Mandatory = $true)][string] $BundlePath
+        [Parameter(Mandatory = $true)][string] $BundlePath,
+        [Parameter(Mandatory = $true)][string] $CurrentAppVersion,
+        [Parameter(Mandatory = $true)][string[]] $ValidationWarnings
     )
+
+    $warningText = Format-MarkdownList -Items $ValidationWarnings
 
     @"
 # Alpha Validation Bundle
@@ -155,9 +208,13 @@ function Write-ValidationNotes {
 - City name: $($Metadata.CityName)
 - Export timestamp: $($Metadata.ExportedAtUtc)
 - Generator version: $($Metadata.GeneratorVersion)
+- Current tool version: $CurrentAppVersion
 - Schema version: $($Metadata.SchemaVersion)
 - Lines: $($Metadata.LineCount)
 - Stations: $($Metadata.StationCount)
+
+## Validation Warnings
+$warningText
 
 ## Render Settings
 - Baseline layout: geographic
@@ -203,19 +260,27 @@ function Write-FilledFeedbackTemplate {
     param(
         [Parameter(Mandatory = $true)][string] $Path,
         [Parameter(Mandatory = $true)][string] $BundlePath,
-        [Parameter(Mandatory = $true)] $Metadata
+        [Parameter(Mandatory = $true)] $Metadata,
+        [Parameter(Mandatory = $true)][string] $CurrentAppVersion,
+        [Parameter(Mandatory = $true)][string[]] $ValidationWarnings
     )
+
+    $warningText = Format-MarkdownList -Items $ValidationWarnings
 
     @"
 # Feedback Template - v0.1.0-alpha.2-candidate
 
 ## Environment
 
-- CS2 Metro Diagram version: $($Metadata.GeneratorVersion)
+- CS2 Metro Diagram validation tool version: $CurrentAppVersion
+- Export generator version: $($Metadata.GeneratorVersion)
 - Cities: Skylines II game version:
 - Operating system:
 - Are other transport-related mods enabled? If yes, list them:
 - Alpha validation bundle path: $BundlePath
+
+## Validation Warnings
+$warningText
 
 ## City / Network
 
@@ -226,19 +291,19 @@ function Write-FilledFeedbackTemplate {
 
 ## Files To Attach
 
-- `metro-export.json`
-- `metro-export-diagnostics.txt`, if available
-- `baseline-geographic.svg`
-- `baseline-geographic.full.png`
-- `schematic-v2.svg`
-- `schematic-v2.full.png`
-- `schematic-v2-diagnostics\shared-corridors.txt`
-- Viewer settings from `Documents\CS2MetroDiagram\viewer-settings.json`, if available
+- metro-export.json
+- metro-export-diagnostics.txt, if available
+- baseline-geographic.svg
+- baseline-geographic.full.png
+- schematic-v2.svg
+- schematic-v2.full.png
+- schematic-v2-diagnostics\shared-corridors.txt
+- Viewer settings from Documents\CS2MetroDiagram\viewer-settings.json, if available
 - Relevant game/mod log excerpt if export failed
 
 ## Viewer Settings
 
-- Layout mode: `geographic` / `schematic-lite` / `schematic-v2`
+- Layout mode: geographic / schematic-lite / schematic-v2
 - Width:
 - Height:
 - Label font size:
@@ -280,6 +345,8 @@ $tempBundlePath = "$bundlePath.tmp"
 $zipPath = Join-Path $outputRootPath "alpha-validation-$bundleName.zip"
 $diagnosticsInputPath = Get-FullPath (Get-DefaultDiagnosticsPath -JsonPath $inputPath)
 $metadata = Read-ExportMetadata -JsonPath $inputPath
+$currentAppVersion = Get-CurrentAppVersion -RepoRoot $repoRoot
+$validationWarnings = @(Get-ValidationWarnings -Metadata $metadata -CurrentAppVersion $currentAppVersion)
 
 if (Test-Path -LiteralPath $tempBundlePath) {
     Remove-Item -LiteralPath $tempBundlePath -Recurse -Force
@@ -339,8 +406,8 @@ try {
         throw "Visual continuity analysis failed with exit code $LASTEXITCODE."
     }
 
-    Write-ValidationNotes -Path (Join-Path $tempBundlePath 'notes.md') -InputPath $inputPath -DiagnosticsPath $diagnosticsInputPath -GeneratedAt (Get-Date -Format 'yyyy-MM-dd HH:mm:ss') -Metadata $metadata -BundlePath $bundlePath
-    Write-FilledFeedbackTemplate -Path (Join-Path $tempBundlePath 'feedback-template-filled.md') -BundlePath $bundlePath -Metadata $metadata
+    Write-ValidationNotes -Path (Join-Path $tempBundlePath 'notes.md') -InputPath $inputPath -DiagnosticsPath $diagnosticsInputPath -GeneratedAt (Get-Date -Format 'yyyy-MM-dd HH:mm:ss') -Metadata $metadata -BundlePath $bundlePath -CurrentAppVersion $currentAppVersion -ValidationWarnings $validationWarnings
+    Write-FilledFeedbackTemplate -Path (Join-Path $tempBundlePath 'feedback-template-filled.md') -BundlePath $bundlePath -Metadata $metadata -CurrentAppVersion $currentAppVersion -ValidationWarnings $validationWarnings
 
     Move-Item -LiteralPath $tempBundlePath -Destination $bundlePath
 

@@ -54,6 +54,8 @@ artifacts\alpha-validation\alpha-validation-20260605-095556-primary-city-post-cl
 
 - The bundle includes geographic, schematic-lite, and schematic-v2 SVG/PNG outputs, visual continuity report, schematic-v2 diagnostics, notes, viewer settings, and a filled feedback template.
 - The geographic visual continuity report shows 9 route base strokes, 0 shared corridor strokes, 0 express stripe strokes, uniform normal stroke width 14, and no current-threshold visual continuity risks.
+- Follow-up validation harness fix: `generate-alpha-validation-bundle.ps1` now compares the export `generator.version` with the current tool version and writes freshness warnings into `notes.md` and `feedback-template-filled.md`. This catches stale alpha.1 exports being reviewed with alpha.2 tooling without blocking historical regression bundles.
+- The filled feedback template no longer uses PowerShell-sensitive Markdown backticks around generated filenames, fixing the observed backspace/control-character corruption around `baseline-geographic.svg`.
 
 Phase 4D.4 is closed. The primary city baseline has been accepted for alpha.2 candidate review. Route continuity is acceptable, stroke width consistency is acceptable, white-filled station markers are restored, station alignment is acceptable for alpha, and label readability is acceptable while still a known polish area. Shared corridor and express stripe remain experimental and off by default.
 

@@ -2042,3 +2042,19 @@ D:\CS2MetroDiagram\metro-export.json
 ```
 
 - The bundle generated baseline geographic, schematic-lite, schematic-v2 SVG/PNG outputs, schematic-v2 diagnostics, visual continuity report, notes, viewer settings, and a filled feedback template.
+- Follow-up fix:
+  - validation bundle notes and filled feedback now include both export generator version and current tool version,
+  - stale export warnings are written when the versions differ,
+  - placeholder city names such as `CS2 Metro Export` are called out so testers can identify the real city manually,
+  - generated feedback file lists no longer wrap filenames in PowerShell backticks, avoiding the `baseline-*` backspace/control-character corruption.
+- Verified with:
+
+```text
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\generate-alpha-validation-bundle.ps1 -InputJson D:\CS2MetroDiagram\metro-export.json -CaseName freshness-check-fixed -SkipZip
+```
+
+- Test bundle:
+
+```text
+artifacts\alpha-validation\20260605-101043-freshness-check-fixed
+```

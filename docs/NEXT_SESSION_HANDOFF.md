@@ -27,6 +27,15 @@ artifacts\alpha-validation\alpha-validation-20260605-095556-primary-city-post-cl
 ```
 
 - Use this bundle as the latest post-cleanup sanity check before changing renderer behavior again.
+- Validation harness improvement after bundle review:
+  - `generate-alpha-validation-bundle.ps1` now writes export/tool version freshness warnings,
+  - stale `v0.1.0-alpha.1` exports are allowed but clearly marked when reviewed by `v0.1.0-alpha.2-candidate` tooling,
+  - filled feedback filenames no longer use PowerShell backticks, fixing the `baseline-geographic.svg` corruption.
+- Latest script verification bundle:
+
+```text
+artifacts\alpha-validation\20260605-101043-freshness-check-fixed
+```
 
 Phase 5D.1 froze the current schematic-v2 candidate artifacts under:
 
