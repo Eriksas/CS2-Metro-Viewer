@@ -14,6 +14,20 @@ Follow-up work after visual review fixed the remaining `10号线` issue: schemat
 
 Latest schematic-v2 polish adds exact shared platform overlays for cases like the west-side `3号线` / `4号线` parallel-track stations and single-edge exact shared segments such as `10号线` / `7号线`. These overlays are built from final route chains only, support any two-or-more display families on the same exact segment, include express/service families, and do not materialize route guides. Current regenerated SVGs show `3号线` / `4号线`, `10号线` / `7号线`, and `10号线` / `1号线` as `exact-shared-platform`, while `2号线` / `10号线` remains `geometry-route-guide`; `2号线` / `8号线` does not receive a false parallel overlay.
 
+Project hygiene after the accidental GitHub alpha.1 pull:
+
+- Merge conflict cleanup has been completed and pushed.
+- `scripts\README.md` was added as the script index.
+- Loose ignored pathPoints smoke SVGs were moved to `artifacts\archive\pathpoints-smoke\`.
+- Fresh validation bundle:
+
+```text
+artifacts\alpha-validation\20260605-095556-primary-city-post-cleanup
+artifacts\alpha-validation\alpha-validation-20260605-095556-primary-city-post-cleanup.zip
+```
+
+- Use this bundle as the latest post-cleanup sanity check before changing renderer behavior again.
+
 Phase 5D.1 froze the current schematic-v2 candidate artifacts under:
 
 ```text

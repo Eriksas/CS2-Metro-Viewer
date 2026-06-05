@@ -23,6 +23,7 @@ This folder is organized around the current alpha workflow. Top-level docs shoul
 - `DEV_NOTES.md` - chronological implementation notes and local commands.
 - `DECISION_LOG.md` - important project decisions and reasons.
 - `DEVELOPMENT_PLAN.md` - original long-form plan; useful as historical direction, not a strict current checklist.
+- `..\scripts\README.md` - script index grouped by release, validation, diagnostics, and local CS2 mod workflows.
 
 ## Release
 

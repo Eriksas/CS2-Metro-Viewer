@@ -2009,3 +2009,36 @@ artifacts\schematic-v2-diagnostics\transit-map-style-schematic-v2.full.png
 
 - Current SVG diagnostics show `exact-shared-platform` overlays for `10号线` / `7号线`, `10号线` / `1号线`, and `3号线` / `4号线`, and the geometry-route-guide overlay for `10号线` / `2号线`.
 - This protects exact coincident schematic-v2 final segments from draw-order hiding. It does not claim to solve arbitrary near-parallel or close-but-not-identical segments; those still need future diagnostics if a validation city exposes them.
+
+## Project Hygiene - 2026-06-05
+
+- After resolving the accidental GitHub alpha.1 pull/merge, the repository was clean and synchronized with `origin/master`.
+- Added `scripts\README.md` so the script folder has a stable entry point.
+- Moved loose ignored smoke files:
+
+```text
+artifacts\tmp-pathpoints.svg
+artifacts\tmp-pathpoints-composite.svg
+artifacts\tmp-pathpoints-corridor.svg
+```
+
+to:
+
+```text
+artifacts\archive\pathpoints-smoke\
+```
+
+- Generated a fresh alpha validation bundle:
+
+```text
+artifacts\alpha-validation\20260605-095556-primary-city-post-cleanup
+artifacts\alpha-validation\alpha-validation-20260605-095556-primary-city-post-cleanup.zip
+```
+
+- Bundle source input:
+
+```text
+D:\CS2MetroDiagram\metro-export.json
+```
+
+- The bundle generated baseline geographic, schematic-lite, schematic-v2 SVG/PNG outputs, schematic-v2 diagnostics, visual continuity report, notes, viewer settings, and a filled feedback template.

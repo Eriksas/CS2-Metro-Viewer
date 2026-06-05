@@ -41,6 +41,20 @@ Manual inspection shows the west-side `3号线` / `4号线` badges are separated
 
 Follow-up schematic-v2 review checked whether Line 7 could hide other lines on exact shared final-route segments. The renderer now treats exact shared platform segments as visibility overlays for any two-or-more display families, including express/service families and single-edge shared runs. The current transit-map schematic-v2 SVG shows explicit `exact-shared-platform` overlays for `10号线` / `7号线`, `10号线` / `1号线`, and `3号线` / `4号线`, plus the existing geometry-route-guide overlay for `10号线` / `2号线`. `10号线` keeps its white express marker inside the `10号线` / `7号线` and `10号线` / `2号线` shared sections. This is renderer-only and does not change exporter output, JSON schema, geographic rendering, raw stops, or raw path points.
 
+Project hygiene follow-up after the GitHub merge cleanup:
+
+- `scripts\README.md` now indexes build, publish, local mod, validation, and diagnostics scripts.
+- Loose pathPoints smoke SVGs were moved from `artifacts\` to `artifacts\archive\pathpoints-smoke\`.
+- A fresh alpha validation bundle was generated from `D:\CS2MetroDiagram\metro-export.json`:
+
+```text
+artifacts\alpha-validation\20260605-095556-primary-city-post-cleanup
+artifacts\alpha-validation\alpha-validation-20260605-095556-primary-city-post-cleanup.zip
+```
+
+- The bundle includes geographic, schematic-lite, and schematic-v2 SVG/PNG outputs, visual continuity report, schematic-v2 diagnostics, notes, viewer settings, and a filled feedback template.
+- The geographic visual continuity report shows 9 route base strokes, 0 shared corridor strokes, 0 express stripe strokes, uniform normal stroke width 14, and no current-threshold visual continuity risks.
+
 Phase 4D.4 is closed. The primary city baseline has been accepted for alpha.2 candidate review. Route continuity is acceptable, stroke width consistency is acceptable, white-filled station markers are restored, station alignment is acceptable for alpha, and label readability is acceptable while still a known polish area. Shared corridor and express stripe remain experimental and off by default.
 
 Phase 4E alpha.2 candidate package has been generated. Geographic remains the recommended alpha.2 default baseline. Phase 5B starts a topology-first schematic-v2 exploration because schematic-lite-v1 patch fixes are not sufficient for reliable topology. Phase 5B.2 preserves exact topology-level shared corridors in schematic-v2 by selecting a topology-rich service variant for each display family and adding shared-corridor diagnostics. Phase 5B.3 adds pathPoints-based geometry shared corridor detection for skip-stop / express cases where stop sequences alone are insufficient. Phase 5B.3b/5B.3c proved route-guide materialization can work, but the approach is too complex and unstable for the current alpha. Phase 5B.4 switches schematic-v2 to service variant simplification: each service family renders one canonical route, express / rapid / skip-stop variants are hidden as independent geometry, and a white center stripe marks families that contain express service variants. A follow-up schematic-v2 fix now re-applies corridor route guides to the final render route chain, normalizes obvious canonical backtracking chains, renders the real `2号线` / `10号线` shared section as a continuous parallel corridor, and preserves the `10号线` white express center stripe inside that shared section. Geographic remains unchanged and recommended for alpha. Phase 4F adds an alpha validation bundle workflow so each real city export can produce a repeatable feedback package instead of continuing single-city visual tuning.
