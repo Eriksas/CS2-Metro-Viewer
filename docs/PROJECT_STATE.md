@@ -502,6 +502,7 @@ Keep the `v0.1.0-alpha.2-candidate` package and geographic baseline stable while
 - The Viewer also checks `Documents\CS2MetroDiagram\metro-export.json`.
 - Viewer settings are stored at `Documents\CS2MetroDiagram\viewer-settings.json`.
 - Alpha validation bundles are generated under `artifacts\alpha-validation`.
+- Local artifacts are trimmed to the current alpha.2 release package, self-contained Viewer package, latest alpha validation bundle, and latest product candidate map. Regenerate older diagnostics/comparison outputs from scripts when needed.
 
 ## In Progress
 
@@ -546,6 +547,7 @@ Keep the `v0.1.0-alpha.2-candidate` package and geographic baseline stable while
 8. Run in-game smoke for `Export Real Metro JSON` on the primary city and future alpha cities.
 9. Confirm latest and snapshot exports still appear under `D:\CS2MetroDiagram`.
 10. Defer new renderer feature work until alpha validation bundles show repeated issues.
+11. Keep obsolete generated artifacts out of the workspace; use scripts to regenerate rather than preserving every historical output.
 
 ## Verification
 

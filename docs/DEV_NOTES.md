@@ -2330,3 +2330,18 @@ artifacts\viewer-win-x64-self-contained\MetroDiagram.Viewer.exe
 
 - NuGet / dotnet / npm cache should stay on `E:\CS2\.tool-cache` for future work to avoid filling C drive.
 
+## Project cleanup - 2026-06-14
+
+- Removed tracked `CS2 Metro\Library\ilpp.pid`; `CS2 Metro/Library/` is now ignored because it is local mod tooling output.
+- Removed old tracked phase archive docs under `docs\archive`; useful content had already been consolidated into top-level docs such as `ROUTE_GEOMETRY_NOTES.md`, `PROJECT_STATE.md`, `DEV_NOTES.md`, and `ALPHA_TEST_PLAN.md`.
+- Cleaned ignored local build/cache output:
+  - `.vs`
+  - `bin`
+  - `obj`
+- Trimmed ignored local artifacts. Current kept artifact categories:
+  - latest alpha.2 release package under `artifacts\releases`
+  - current self-contained Viewer under `artifacts\viewer-win-x64-self-contained`
+  - latest alpha validation bundle under `artifacts\alpha-validation`
+  - latest product candidate map under `artifacts\product-candidate`
+- Deleted obsolete local artifact categories such as old path-geometry comparisons, primary-city baseline snapshots, old schematic-v2 diagnostics, old alpha.1 release package, and older validation bundles.
+

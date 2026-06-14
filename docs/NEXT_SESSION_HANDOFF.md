@@ -915,3 +915,4 @@ dotnet build CS2MetroDiagram.slnx --no-restore
   - Validation zip: `artifacts\alpha-validation\alpha-validation-20260614-002122-zhaoqing-alpha2-short-term.zip`
   - Product candidate: `artifacts\product-candidate\20260614-002504-zhaoqing-alpha2-short-term`
   - Release zip: `artifacts\releases\CS2MetroDiagram-v0.1.0-alpha.2-candidate-win-x64.zip`
+- 2026-06-14 cleanup pass removed obsolete local artifacts, build outputs, `docs\archive`, and tracked `CS2 Metro\Library\ilpp.pid`. Regenerate deleted diagnostics/comparison outputs with the scripts in `scripts\` if needed.
