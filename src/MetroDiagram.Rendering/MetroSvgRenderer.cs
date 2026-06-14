@@ -35,7 +35,7 @@ public sealed class MetroSvgRenderer
         AppendHeader(svg, document, options);
         AppendEmptyNotice(svg, stations, lines, options);
         AppendRoutes(svg, stations, displayFamilies, stationsById, stationPoints, terminalStationIds, geometry, options, hasLegend, warnings);
-        AppendStations(svg, stations, stationPoints, stationAnchors.Anchors, geometry.SchematicStationAdjustments, options);
+        AppendStations(svg, stations, stationPoints, stationAnchors.Anchors, geometry.SchematicStationAdjustments, geometry.SchematicV2DenseStationPairs, options);
         AppendLabels(svg, stations, stationPoints, stationAnchors.Anchors, geometry.SchematicStationAdjustments, terminalStationIds, options, hasLegend);
         AppendLegend(svg, SortFamiliesForLegend(displayFamilies), options, hasLegend);
         AppendFooter(svg, options);
@@ -72,7 +72,7 @@ public sealed class MetroSvgRenderer
         CoordinateProjector? projector = CoordinateProjector.Create(sourceCoordinates, options, reserveLegendSpace);
         if (projector is null)
         {
-            return new RenderGeometry([], null, [], null, null);
+            return new RenderGeometry([], null, [], [], null, null);
         }
 
         Dictionary<string, SvgPoint> points = new(StringComparer.Ordinal);
@@ -89,7 +89,7 @@ public sealed class MetroSvgRenderer
         if (options.LayoutMode == SvgLayoutMode.SchematicLite)
         {
             SchematicLayoutResult schematicLayout = ApplySchematicLiteLayout(points, lines, stationsById, options, reserveLegendSpace, warnings);
-            return new RenderGeometry(schematicLayout.Points, projector, schematicLayout.Adjustments, null, null);
+            return new RenderGeometry(schematicLayout.Points, projector, schematicLayout.Adjustments, [], null, null);
         }
 
         if (options.LayoutMode == SvgLayoutMode.SchematicV2)
@@ -119,10 +119,10 @@ public sealed class MetroSvgRenderer
                 reserveLegendSpace,
                 warnings);
             SchematicLayoutResult targetLayout = ScaleSchematicV2LayoutToTarget(canonicalLayout, canonicalOptions, options, reserveLegendSpace);
-            return new RenderGeometry(targetLayout.Points, projector, targetLayout.Adjustments, targetLayout.RouteGuideByFamily, targetLayout.RouteGuideMetadataByFamily);
+            return new RenderGeometry(targetLayout.Points, projector, targetLayout.Adjustments, targetLayout.DenseStationPairs, targetLayout.RouteGuideByFamily, targetLayout.RouteGuideMetadataByFamily);
         }
 
-        return new RenderGeometry(points, projector, [], null, null);
+        return new RenderGeometry(points, projector, [], [], null, null);
     }
 
     private static StationRouteAnchorMap ResolveStationRouteAnchors(
@@ -481,6 +481,7 @@ public sealed class MetroSvgRenderer
             return new SchematicLayoutResult(
                 adjusted,
                 [],
+                [],
                 new Dictionary<string, List<string>>(StringComparer.Ordinal),
                 new Dictionary<string, SchematicV2RouteGuideMetadata>(StringComparer.Ordinal));
         }
@@ -558,6 +559,7 @@ public sealed class MetroSvgRenderer
         return new SchematicLayoutResult(
             adjusted,
             adjustments,
+            [],
             new Dictionary<string, List<string>>(StringComparer.Ordinal),
             new Dictionary<string, SchematicV2RouteGuideMetadata>(StringComparer.Ordinal));
     }
@@ -672,13 +674,13 @@ public sealed class MetroSvgRenderer
 
     private static int CountSchematicSpacingConflicts(Dictionary<string, SvgPoint> stationPoints, double minimumSpacing)
     {
-        List<SvgPoint> points = stationPoints.Values.ToList();
+        List<string> stationIds = stationPoints.Keys.OrderBy(id => id, StringComparer.Ordinal).ToList();
         int conflicts = 0;
-        for (int i = 0; i < points.Count; i++)
+        for (int i = 0; i < stationIds.Count; i++)
         {
-            for (int j = i + 1; j < points.Count; j++)
+            for (int j = i + 1; j < stationIds.Count; j++)
             {
-                double distance = Distance(points[i], points[j]);
+                double distance = Distance(stationPoints[stationIds[i]], stationPoints[stationIds[j]]);
                 if (distance < minimumSpacing)
                 {
                     conflicts++;
@@ -687,6 +689,96 @@ public sealed class MetroSvgRenderer
         }
 
         return conflicts;
+    }
+
+    private static List<SchematicV2DenseStationPair> FindSchematicV2DenseStationPairs(
+        Dictionary<string, SvgPoint> stationPoints,
+        Dictionary<string, HashSet<string>> adjacency,
+        HashSet<string> interchangeStationIds,
+        Dictionary<string, MetroStation> stationsById,
+        double minimumSpacing)
+    {
+        List<SchematicV2DenseStationPair> pairs = [];
+        List<string> stationIds = stationPoints.Keys.OrderBy(id => id, StringComparer.Ordinal).ToList();
+        for (int i = 0; i < stationIds.Count; i++)
+        {
+            string firstId = stationIds[i];
+            for (int j = i + 1; j < stationIds.Count; j++)
+            {
+                string secondId = stationIds[j];
+                double distance = Distance(stationPoints[firstId], stationPoints[secondId]);
+                if (distance >= minimumSpacing)
+                {
+                    continue;
+                }
+
+                bool adjacent = adjacency.TryGetValue(firstId, out HashSet<string>? neighbors) && neighbors.Contains(secondId);
+                bool sameNameCluster = HaveSameStationDisplayName(firstId, secondId, stationsById);
+                pairs.Add(new SchematicV2DenseStationPair(
+                    firstId,
+                    secondId,
+                    distance,
+                    minimumSpacing,
+                    adjacent,
+                    sameNameCluster,
+                    interchangeStationIds.Contains(firstId),
+                    interchangeStationIds.Contains(secondId)));
+            }
+        }
+
+        return pairs
+            .OrderBy(pair => pair.Distance)
+            .ThenBy(pair => pair.FirstStationId, StringComparer.Ordinal)
+            .ThenBy(pair => pair.SecondStationId, StringComparer.Ordinal)
+            .ToList();
+    }
+
+    private static string FormatSchematicV2DensePairDetails(
+        List<SchematicV2DenseStationPair> pairs,
+        Dictionary<string, MetroStation> stationsById)
+    {
+        if (pairs.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        IEnumerable<string> details = pairs.Take(6).Select(pair =>
+        {
+            string firstName = GetStationDebugName(pair.FirstStationId, stationsById);
+            string secondName = GetStationDebugName(pair.SecondStationId, stationsById);
+            string adjacent = pair.Adjacent ? "adjacent" : "non-adjacent";
+            string sameName = pair.SameNameCluster ? ", same-name cluster" : string.Empty;
+            return $"{firstName} <-> {secondName} ({Format(pair.Distance)}/{Format(pair.MinimumSpacing)}, {adjacent}{sameName})";
+        });
+        string suffix = pairs.Count > 6 ? $"; +{pairs.Count - 6} more" : string.Empty;
+        return $"; remaining dense station pair details: {string.Join("; ", details)}{suffix}";
+    }
+
+    private static string GetStationDebugName(string stationId, Dictionary<string, MetroStation> stationsById)
+    {
+        if (stationsById.TryGetValue(stationId, out MetroStation? station)
+            && !string.IsNullOrWhiteSpace(station.Name))
+        {
+            return $"{station.Name} [{stationId}]";
+        }
+
+        return stationId;
+    }
+
+    private static bool HaveSameStationDisplayName(
+        string firstStationId,
+        string secondStationId,
+        Dictionary<string, MetroStation> stationsById)
+    {
+        if (!stationsById.TryGetValue(firstStationId, out MetroStation? first)
+            || !stationsById.TryGetValue(secondStationId, out MetroStation? second)
+            || string.IsNullOrWhiteSpace(first.Name)
+            || string.IsNullOrWhiteSpace(second.Name))
+        {
+            return false;
+        }
+
+        return string.Equals(first.Name.Trim(), second.Name.Trim(), StringComparison.CurrentCulture);
     }
 
     private static SchematicLayoutResult ApplySchematicV2Layout(
@@ -807,14 +899,16 @@ public sealed class MetroSvgRenderer
                 ? "topology-spacing-sharp-angle-relaxation"
                 : "topology-spacing";
         Dictionary<string, SchematicStationAdjustment> adjustments = BuildSchematicStationAdjustments(original, points, adjustmentReason);
-        int remainingDensePairs = CountSchematicSpacingConflicts(points, minimumSpacing);
+        List<SchematicV2DenseStationPair> remainingDensePairs = FindSchematicV2DenseStationPairs(points, adjacency, interchangeStationIds, stationsById, minimumSpacing);
         int remainingShortEdges = CountShortSchematicEdges(points, adjacency, minimumSpacing);
         double maxAdjustment = adjustments.Values.Select(adjustment => adjustment.Distance).DefaultIfEmpty(0).Max();
         string canonicalNetworkText = canonicalNetwork is null
             ? "none"
             : $"stations={canonicalNetwork.Stations.Count}, families={canonicalNetwork.Families.Count}, edges={canonicalNetwork.AdjacencyEdges.Count}, corridor hints={canonicalNetwork.CorridorHints.Count}";
-        warnings.Add($"Schematic-v2 topology diagnostics: initial dense station pairs: {initialDensePairs}; remaining dense station pairs: {remainingDensePairs}; initial short adjacency edges: {initialShortEdges}; remaining short adjacency edges: {remainingShortEdges}; adjusted stations: {adjustments.Count}; max adjustment distance: {Format(maxAdjustment)}; sharp angle relaxations: {relaxedSharpAngles}; terminal tail straightening: {straightenedTerminalTails}; geometry shared corridors: {geometryCorridors.Count}; canonical network: {canonicalNetworkText}.");
-        return new SchematicLayoutResult(points, adjustments, routeGuideResult.RouteGuideByFamily, routeGuideResult.MetadataByFamily);
+        string densePairDetails = FormatSchematicV2DensePairDetails(remainingDensePairs, stationsById);
+        int sameNameDenseClusters = remainingDensePairs.Count(pair => pair.SameNameCluster);
+        warnings.Add($"Schematic-v2 topology diagnostics: initial dense station pairs: {initialDensePairs}; remaining dense station pairs: {remainingDensePairs.Count}; same-name dense clusters: {sameNameDenseClusters}; initial short adjacency edges: {initialShortEdges}; remaining short adjacency edges: {remainingShortEdges}; adjusted stations: {adjustments.Count}; max adjustment distance: {Format(maxAdjustment)}; sharp angle relaxations: {relaxedSharpAngles}; terminal tail straightening: {straightenedTerminalTails}; geometry shared corridors: {geometryCorridors.Count}; canonical network: {canonicalNetworkText}{densePairDetails}.");
+        return new SchematicLayoutResult(points, adjustments, remainingDensePairs, routeGuideResult.RouteGuideByFamily, routeGuideResult.MetadataByFamily);
     }
 
     private static SvgRenderOptions CreateSchematicV2CanonicalOptions(SvgRenderOptions options)
@@ -904,7 +998,23 @@ public sealed class MetroSvgRenderer
             },
             StringComparer.Ordinal);
 
-        return new SchematicLayoutResult(scaledPoints, scaledAdjustments, layout.RouteGuideByFamily, layout.RouteGuideMetadataByFamily);
+        double minScale = Math.Min(targetWidth / sourceWidth, targetHeight / sourceHeight);
+        List<SchematicV2DenseStationPair> scaledDensePairs = layout.DenseStationPairs
+            .Select(pair =>
+            {
+                double distance = scaledPoints.TryGetValue(pair.FirstStationId, out SvgPoint first)
+                    && scaledPoints.TryGetValue(pair.SecondStationId, out SvgPoint second)
+                        ? Distance(first, second)
+                        : pair.Distance * minScale;
+                return pair with
+                {
+                    Distance = distance,
+                    MinimumSpacing = pair.MinimumSpacing * minScale
+                };
+            })
+            .ToList();
+
+        return new SchematicLayoutResult(scaledPoints, scaledAdjustments, scaledDensePairs, layout.RouteGuideByFamily, layout.RouteGuideMetadataByFamily);
     }
 
     private static int RelaxSchematicV2SharpAngles(
@@ -5837,6 +5947,7 @@ public sealed class MetroSvgRenderer
         Dictionary<string, SvgPoint> stationPoints,
         Dictionary<string, StationRenderAnchor> stationAnchors,
         Dictionary<string, SchematicStationAdjustment> schematicStationAdjustments,
+        List<SchematicV2DenseStationPair> schematicV2DenseStationPairs,
         SvgRenderOptions options)
     {
         svg.AppendLine("""<g id="stations">""");
@@ -5854,7 +5965,8 @@ public sealed class MetroSvgRenderer
             double strokeWidth = isInterchange ? visualStyle.InterchangeMarkerStrokeWidth : visualStyle.StationMarkerStrokeWidth;
             string anchorAttributes = BuildStationAnchorAttributes(station.Id!, stationAnchors);
             string schematicAdjustmentAttributes = BuildSchematicStationAdjustmentAttributes(station.Id!, schematicStationAdjustments);
-            svg.AppendLine($"""<circle class="{stationClass}" data-station-id="{Escape(station.Id)}"{anchorAttributes}{schematicAdjustmentAttributes} data-marker-stroke-width="{Format(strokeWidth)}" cx="{Format(point.X)}" cy="{Format(point.Y)}" r="{Format(radius)}" />""");
+            string schematicV2DenseAttributes = BuildSchematicV2DenseStationAttributes(station.Id!, schematicV2DenseStationPairs);
+            svg.AppendLine($"""<circle class="{stationClass}" data-station-id="{Escape(station.Id)}"{anchorAttributes}{schematicAdjustmentAttributes}{schematicV2DenseAttributes} data-marker-stroke-width="{Format(strokeWidth)}" cx="{Format(point.X)}" cy="{Format(point.Y)}" r="{Format(radius)}" />""");
             if (IsTransitMapStyle(options) && isInterchange)
             {
                 double innerRadius = Math.Max(2.5, radius - 4.2);
@@ -5962,6 +6074,32 @@ public sealed class MetroSvgRenderer
         }
 
         return $" data-schematic-station-adjusted=\"true\" data-schematic-station-adjustment-distance=\"{Format(adjustment.Distance)}\" data-schematic-station-adjustment-reason=\"{Escape(adjustment.Reason)}\" data-schematic-station-original-x=\"{Format(adjustment.OriginalPoint.X)}\" data-schematic-station-original-y=\"{Format(adjustment.OriginalPoint.Y)}\"";
+    }
+
+    private static string BuildSchematicV2DenseStationAttributes(
+        string stationId,
+        List<SchematicV2DenseStationPair> densePairs)
+    {
+        List<SchematicV2DenseStationPair> stationPairs = densePairs
+            .Where(pair => string.Equals(pair.FirstStationId, stationId, StringComparison.Ordinal)
+                || string.Equals(pair.SecondStationId, stationId, StringComparison.Ordinal))
+            .OrderBy(pair => pair.Distance)
+            .ToList();
+
+        if (stationPairs.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        string pairedStationIds = string.Join(",", stationPairs.Select(pair =>
+            string.Equals(pair.FirstStationId, stationId, StringComparison.Ordinal)
+                ? pair.SecondStationId
+                : pair.FirstStationId));
+        double minimumDistance = stationPairs.Min(pair => pair.Distance);
+        bool hasAdjacentPair = stationPairs.Any(pair => pair.Adjacent);
+        bool sameNameCluster = stationPairs.Any(pair => pair.SameNameCluster);
+
+        return $" data-schematic-v2-dense-station=\"true\" data-schematic-v2-dense-pair-count=\"{stationPairs.Count}\" data-schematic-v2-dense-paired-stations=\"{Escape(pairedStationIds)}\" data-schematic-v2-dense-min-distance=\"{Format(minimumDistance)}\" data-schematic-v2-dense-has-adjacent-pair=\"{(hasAdjacentPair ? "true" : "false")}\" data-schematic-v2-dense-same-name-cluster=\"{(sameNameCluster ? "true" : "false")}\"";
     }
 
     private static string BuildStationAnchorAttributes(string stationId, Dictionary<string, StationRenderAnchor> stationAnchors)
@@ -6624,12 +6762,14 @@ public sealed class MetroSvgRenderer
         Dictionary<string, SvgPoint> StationPoints,
         CoordinateProjector? Projector,
         Dictionary<string, SchematicStationAdjustment> SchematicStationAdjustments,
+        List<SchematicV2DenseStationPair> SchematicV2DenseStationPairs,
         Dictionary<string, List<string>>? SchematicV2RouteGuideByFamily,
         Dictionary<string, SchematicV2RouteGuideMetadata>? SchematicV2RouteGuideMetadataByFamily);
 
     private readonly record struct SchematicLayoutResult(
         Dictionary<string, SvgPoint> Points,
         Dictionary<string, SchematicStationAdjustment> Adjustments,
+        List<SchematicV2DenseStationPair> DenseStationPairs,
         Dictionary<string, List<string>> RouteGuideByFamily,
         Dictionary<string, SchematicV2RouteGuideMetadata> RouteGuideMetadataByFamily);
 
@@ -6639,6 +6779,16 @@ public sealed class MetroSvgRenderer
         SvgPoint AdjustedPoint,
         double Distance,
         string Reason);
+
+    private readonly record struct SchematicV2DenseStationPair(
+        string FirstStationId,
+        string SecondStationId,
+        double Distance,
+        double MinimumSpacing,
+        bool Adjacent,
+        bool SameNameCluster,
+        bool FirstInterchange,
+        bool SecondInterchange);
 
     private readonly record struct SchematicV2FamilyPath(
         string FamilyKey,

@@ -146,6 +146,13 @@ artifacts\schematic-v2-diagnostics\latest-zhaoqing-schematic-v2.svg
 
 - This pass is intentionally scoped away from previously fixed 2号线/10号线 geometry sharing, 3号线/4号线 exact shared platform overlays, geographic output, exporter logic, and JSON schema.
 
+Schematic-v2 dense-station diagnostics follow-up:
+
+- Schematic-v2 now reports concrete remaining dense station pairs in renderer warnings instead of only reporting a count.
+- Station markers involved in remaining dense pairs include SVG debug attributes such as `data-schematic-v2-dense-station`, paired station ids, minimum distance, adjacent-pair status, and same-name cluster status.
+- On the current Zhaoqing product-candidate map, the remaining dense pairs are both same-name station clusters (`肇庆二中站` and `现代地铁站`), which should be treated differently from ordinary accidental crowding.
+- This is diagnostics-only and renderer-only; it does not modify exporter output, JSON schema, geographic rendering, raw `line.stops`, or raw `line.pathPoints`.
+
 Paradox Mods publishing status:
 
 - First Paradox Mods upload completed successfully.

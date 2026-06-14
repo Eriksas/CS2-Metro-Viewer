@@ -916,3 +916,4 @@ dotnet build CS2MetroDiagram.slnx --no-restore
   - Product candidate: `artifacts\product-candidate\20260614-002504-zhaoqing-alpha2-short-term`
   - Release zip: `artifacts\releases\CS2MetroDiagram-v0.1.0-alpha.2-candidate-win-x64.zip`
 - 2026-06-14 cleanup pass removed obsolete local artifacts, build outputs, `docs\archive`, and tracked `CS2 Metro\Library\ilpp.pid`. Regenerate deleted diagnostics/comparison outputs with the scripts in `scripts\` if needed.
+- 2026-06-14 schematic-v2 dense-station diagnostics now list concrete remaining dense station pairs and mark station SVG elements with `data-schematic-v2-dense-*` attributes. The latest Zhaoqing transit-map candidate reports two remaining dense pairs, both same-name clusters (`肇庆二中站`, `现代地铁站`) rather than ordinary accidental crowding.

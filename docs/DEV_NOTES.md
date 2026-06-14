@@ -2345,3 +2345,9 @@ artifacts\viewer-win-x64-self-contained\MetroDiagram.Viewer.exe
   - latest product candidate map under `artifacts\product-candidate`
 - Deleted obsolete local artifact categories such as old path-geometry comparisons, primary-city baseline snapshots, old schematic-v2 diagnostics, old alpha.1 release package, and older validation bundles.
 
+## Schematic-v2 dense-station diagnostics - 2026-06-14
+
+- `schematic-v2` warnings now include concrete remaining dense station pair details: station names/ids, distance, minimum spacing, adjacency, and same-name cluster classification.
+- Station marker SVG elements now carry `data-schematic-v2-dense-*` attributes when they participate in a remaining dense pair. This makes Viewer screenshots easier to diagnose from the saved SVG.
+- The latest Zhaoqing product-candidate run reports two remaining dense pairs, both same-name clusters. Do not treat those as generic layout failures without checking whether they represent the same station/platform concept.
+

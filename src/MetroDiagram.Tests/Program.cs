@@ -52,6 +52,7 @@ List<(string Name, Action Test)> tests =
     ("schematic-v2 preserves interchange node", SchematicV2PreservesInterchangeNode),
     ("schematic-v2 keeps old schematic-lite available", SchematicV2KeepsOldSchematicLiteAvailable),
     ("schematic-v2 spacing does not reverse close stations", SchematicV2SpacingDoesNotReverseCloseStations),
+    ("schematic-v2 reports remaining dense station pairs", SchematicV2ReportsRemainingDenseStationPairs),
     ("schematic-v2 relaxes sharp detour station", SchematicV2RelaxesSharpDetourStation),
     ("schematic-v2 uses topology-rich family variant for shared corridors", SchematicV2UsesTopologyRichFamilyVariantForSharedCorridors),
     ("schematic-v2 preserves shared corridor edge", SchematicV2PreservesSharedCorridorEdge),
@@ -828,6 +829,27 @@ static void SchematicV2SpacingDoesNotReverseCloseStations()
 
     Assert(Distance(routePoints[0], GetStationCenter(xml, "station_a")) < 0.001, "Schematic-v2 close station order was reversed at the first stop.");
     Assert(Distance(routePoints[1], GetStationCenter(xml, "station_b")) < 0.001, "Schematic-v2 close station order was reversed at the second stop.");
+}
+
+static void SchematicV2ReportsRemainingDenseStationPairs()
+{
+    MetroExportDocument document = CreateSchematicOverlapDocument(
+        new SchematicLineSpec("line_2", "Line 2", ["station_a", "station_b", "station_c"]),
+        new SchematicLineSpec("line_8", "Line 8", ["station_d", "station_e", "station_f"]));
+
+    SvgRenderOptions options = CreateSchematicOverlapTestOptions(
+        SvgLayoutMode.SchematicV2,
+        width: 700,
+        height: 460,
+        legendWidth: 160,
+        minStationSpacing: 5000);
+    SvgRenderResult result = new MetroSvgRenderer().Render(document, options);
+    XDocument xml = XDocument.Parse(result.Svg);
+
+    Assert(result.Warnings.Any(warning => warning.Contains("remaining dense station pair details", StringComparison.Ordinal)), "Schematic-v2 warning did not include dense pair details.");
+    Assert(xml.Descendants().Any(element => element.Name.LocalName == "circle"
+        && (string?)element.Attribute("data-schematic-v2-dense-station") == "true"), "Schematic-v2 station markers did not expose dense station debug attributes.");
+    AssertValidSvg(xml, "schematic-v2 dense station diagnostics SVG");
 }
 
 static void SchematicV2RelaxesSharpDetourStation()
